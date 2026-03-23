@@ -1,86 +1,55 @@
 /**
- * Load reference library (ref_*) and return a flat libraryContext for the pipeline.
+ * Load finance reference defaults and return a flat libraryContext for LBO/DCF flows.
  * Used when the request does not provide libraryContext so the pipeline uses DB-backed defaults.
  */
 
 import { db } from '@/lib/db';
-import { ref_materials, ref_building_compositions, project_main } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import {
+  ref_finance_risk_free_rates,
+  ref_finance_equity_risk_premiums,
+  ref_finance_sector_betas,
+} from '@/lib/db/schema';
+import { and, desc, eq } from 'drizzle-orm';
 
 export type LibraryContext = Record<string, number | string>;
 
-/**
- * Load project-agnostic defaults from ref_materials and ref_building_compositions.
- * Optional projectId: if provided and project has country/region, prefer matching ref_building_compositions.
- */
 export async function loadLibraryContextForPipeline(projectId?: string | null): Promise<LibraryContext> {
+  void projectId;
   const ctx: LibraryContext = {};
 
-  const [concrete] = await db
-    .select({ density_kg_m3: ref_materials.density_kg_m3 })
-    .from(ref_materials)
-    .where(eq(ref_materials.name, 'Normal Weight Concrete'))
+  const [riskFree] = await db
+    .select({ rate_percent: ref_finance_risk_free_rates.rate_percent })
+    .from(ref_finance_risk_free_rates)
+    .where(
+      and(
+        eq(ref_finance_risk_free_rates.country_code, 'US'),
+        eq(ref_finance_risk_free_rates.currency_code, 'USD')
+      )
+    )
+    .orderBy(desc(ref_finance_risk_free_rates.observed_at))
     .limit(1);
-  if (concrete?.density_kg_m3 != null) {
-    ctx.density_kg_m3 = Number(concrete.density_kg_m3);
-    ctx.concrete_density = Number(concrete.density_kg_m3);
+  if (riskFree?.rate_percent != null) {
+    ctx.risk_free_rate_percent = Number(riskFree.rate_percent);
   }
 
-  let region: string | null = null;
-  let buildingCategory: string | null = null;
-  if (projectId) {
-    const [project] = await db
-      .select({ country: project_main.country, siteType: project_main.siteType })
-      .from(project_main)
-      .where(eq(project_main.id, projectId))
-      .limit(1);
-    if (project?.country) region = project.country;
-    if (project?.siteType) buildingCategory = project.siteType;
+  const [erp] = await db
+    .select({ erp_percent: ref_finance_equity_risk_premiums.erp_percent })
+    .from(ref_finance_equity_risk_premiums)
+    .where(eq(ref_finance_equity_risk_premiums.country_code, 'US'))
+    .orderBy(desc(ref_finance_equity_risk_premiums.observed_at))
+    .limit(1);
+  if (erp?.erp_percent != null) {
+    ctx.equity_risk_premium_percent = Number(erp.erp_percent);
   }
 
-  let row: { concrete_intensity_m3_per_m2: string | null; steel_intensity_kg_per_m2: string | null } | undefined;
-  if (region) {
-    const [r] = await db
-      .select({
-        concrete_intensity_m3_per_m2: ref_building_compositions.concrete_intensity_m3_per_m2,
-        steel_intensity_kg_per_m2: ref_building_compositions.steel_intensity_kg_per_m2,
-      })
-      .from(ref_building_compositions)
-      .where(eq(ref_building_compositions.region, region))
-      .limit(1);
-    row = r;
-  }
-  if (!row && buildingCategory) {
-    const [r] = await db
-      .select({
-        concrete_intensity_m3_per_m2: ref_building_compositions.concrete_intensity_m3_per_m2,
-        steel_intensity_kg_per_m2: ref_building_compositions.steel_intensity_kg_per_m2,
-      })
-      .from(ref_building_compositions)
-      .where(eq(ref_building_compositions.building_category, buildingCategory))
-      .limit(1);
-    row = r;
-  }
-  if (!row) {
-    const [r] = await db
-      .select({
-        concrete_intensity_m3_per_m2: ref_building_compositions.concrete_intensity_m3_per_m2,
-        steel_intensity_kg_per_m2: ref_building_compositions.steel_intensity_kg_per_m2,
-      })
-      .from(ref_building_compositions)
-      .where(eq(ref_building_compositions.building_category, 'house'))
-      .limit(1);
-    row = r;
-  }
-  if (row?.concrete_intensity_m3_per_m2 != null) {
-    ctx.concrete_intensity_m3_per_m2 = Number(row.concrete_intensity_m3_per_m2);
-  }
-  if (row?.steel_intensity_kg_per_m2 != null) {
-    ctx.steel_intensity_kg_per_m2 = Number(row.steel_intensity_kg_per_m2);
-  }
-
-  if (typeof ctx.thickness !== 'number') {
-    ctx.thickness = 0.2;
+  const [beta] = await db
+    .select({ beta_unlevered: ref_finance_sector_betas.beta_unlevered })
+    .from(ref_finance_sector_betas)
+    .where(eq(ref_finance_sector_betas.sector, 'General'))
+    .orderBy(desc(ref_finance_sector_betas.observed_at))
+    .limit(1);
+  if (beta?.beta_unlevered != null) {
+    ctx.beta_unlevered = Number(beta.beta_unlevered);
   }
 
   return ctx;

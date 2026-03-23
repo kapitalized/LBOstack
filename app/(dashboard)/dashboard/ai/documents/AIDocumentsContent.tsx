@@ -20,7 +20,6 @@ interface ProjectFile {
   blobUrl: string;
   fileSize?: number | null;
   uploadedAt?: string | null;
-  buildingLevel?: number | null;
 }
 
 export interface AIDocumentsContentProps {
@@ -36,16 +35,11 @@ export function AIDocumentsContent({ initialProjectId, baseReportsPath }: AIDocu
   const [projectId, setProjectId] = useState<string>(projectIdParam ?? '');
   const [files, setFiles] = useState<ProjectFile[]>([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [uploadingLevel, setUploadingLevel] = useState<number | null>(null);
   const [uploadingExcel, setUploadingExcel] = useState(false);
-  const [projectDetail, setProjectDetail] = useState<{ numberOfLevels: number } | null>(null);
+  const [uploadingInput, setUploadingInput] = useState(false);
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<{ reportId: string; reportShortId?: string | null; modelName: string } | null>(null);
-  const [dragOver, setDragOver] = useState(false);
-  const [dragOverLevel, setDragOverLevel] = useState<number | null>(null);
-
   useEffect(() => {
     if (initialProjectId) setProjectId(initialProjectId);
   }, [initialProjectId]);
@@ -75,40 +69,6 @@ export function AIDocumentsContent({ initialProjectId, baseReportsPath }: AIDocu
 
   useEffect(() => { loadFiles(); }, [loadFiles]);
 
-  useEffect(() => {
-    if (!projectId) return setProjectDetail(null);
-    fetch(`/api/projects/${projectId}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((p) => (p ? setProjectDetail({ numberOfLevels: p.numberOfLevels ?? 1 }) : setProjectDetail(null)))
-      .catch(() => setProjectDetail(null));
-  }, [projectId]);
-
-  const numberOfLevels = projectDetail?.numberOfLevels ?? 1;
-
-  async function uploadFile(file: File, level: number) {
-    if (!projectId || uploading) return;
-    setError(null);
-    setUploading(true);
-    setUploadingLevel(level);
-    const form = new FormData();
-    form.append('file', file);
-    form.append('buildingLevel', String(level));
-    try {
-      const res = await fetch(`/api/projects/${projectId}/files`, { method: 'POST', body: form });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError((data as { error?: string }).error ?? 'Upload failed.');
-        return;
-      }
-      loadFiles();
-    } catch {
-      setError('Upload failed.');
-    } finally {
-      setUploading(false);
-      setUploadingLevel(null);
-    }
-  }
-
   async function uploadExcelFile(file: File) {
     if (!projectId || uploadingExcel) return;
     setError(null);
@@ -116,7 +76,7 @@ export function AIDocumentsContent({ initialProjectId, baseReportsPath }: AIDocu
     try {
       const form = new FormData();
       form.append('file', file);
-      form.append('fileType', 'lbo_model');
+      form.append('fileType', 'Models');
       const res = await fetch(`/api/projects/${projectId}/files`, { method: 'POST', body: form });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -131,30 +91,26 @@ export function AIDocumentsContent({ initialProjectId, baseReportsPath }: AIDocu
     }
   }
 
-  function onInputChange(level: number, e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) uploadFile(file, level);
-    e.target.value = '';
-  }
-
-  function onDragOverLevel(level: number, e: React.DragEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOverLevel(level);
-  }
-
-  function onDragLeaveLevel(e: React.DragEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOverLevel(null);
-  }
-
-  function onDropLevel(level: number, e: React.DragEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOverLevel(null);
-    const file = e.dataTransfer.files?.[0];
-    if (file && projectId && !uploading) uploadFile(file, level);
+  async function uploadModelInput(file: File) {
+    if (!projectId || uploadingInput) return;
+    setError(null);
+    setUploadingInput(true);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      form.append('fileType', 'Model_Inputs');
+      const res = await fetch(`/api/projects/${projectId}/files`, { method: 'POST', body: form });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError((data as { error?: string }).error ?? 'Upload failed.');
+        return;
+      }
+      loadFiles();
+    } catch {
+      setError('Upload failed.');
+    } finally {
+      setUploadingInput(false);
+    }
   }
 
   async function runAnalysis(file: ProjectFile) {
@@ -163,7 +119,7 @@ export function AIDocumentsContent({ initialProjectId, baseReportsPath }: AIDocu
     setSuccessMessage(null);
     setAnalyzingId(file.id);
     try {
-      if (file.fileType === 'lbo_model') {
+      if (file.fileType === 'Models') {
         const res = await fetch('/api/lbo/run', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -192,40 +148,8 @@ export function AIDocumentsContent({ initialProjectId, baseReportsPath }: AIDocu
         else setError('LBO run completed but no report was created. Try again.');
         loadFiles();
       } else {
-        const res = await fetch('/api/ai/run', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            projectId,
-            fileId: file.id,
-            fileUrl: file.blobUrl,
-            sourceContent: `File: ${file.fileName}`,
-          }),
-        });
-        const data = await res.json().catch(() => ({}));
-        const apiError = (data as { error?: string }).error;
-
-        if (!res.ok) {
-          const msg =
-            apiError ??
-            (res.status >= 500
-              ? 'Server or AI provider error. OpenRouter may be temporarily unavailable — try again later.'
-              : 'Analysis failed.');
-          setError(msg);
-          return;
-        }
-        if (apiError) {
-          setError(apiError);
-          return;
-        }
-        const reportId =
-          (data as { reportId?: string }).reportId ??
-          (data as { persisted?: { reportId?: string } }).persisted?.reportId;
-        const reportShortId = (data as { reportShortId?: string | null }).reportShortId ?? null;
-        const modelName = (data as { modelName?: string }).modelName ?? 'AI model';
-        if (reportId) setSuccessMessage({ reportId, reportShortId, modelName });
-        else setError('Analysis completed but no report was created. Try again.');
-        loadFiles();
+        setError('Only files with type "Models" can be executed. Upload model assumptions as "Model_Inputs".');
+        return;
       }
     } catch {
       setError('Network error or no response. The AI provider or Python engine may be temporarily unavailable. Check your connection and try again.');
@@ -312,7 +236,6 @@ export function AIDocumentsContent({ initialProjectId, baseReportsPath }: AIDocu
                   <thead>
                     <tr className="border-b bg-muted/50">
                       <th className="text-left p-3 font-medium">File name</th>
-                      <th className="text-left p-3 font-medium">Level</th>
                       <th className="text-left p-3 font-medium">Type</th>
                       <th className="text-left p-3 font-medium">Size</th>
                       <th className="text-left p-3 font-medium">Uploaded</th>
@@ -335,7 +258,6 @@ export function AIDocumentsContent({ initialProjectId, baseReportsPath }: AIDocu
                             {f.fileName}
                           </span>
                         </td>
-                        <td className="p-3 text-muted-foreground">{f.buildingLevel != null ? `Level ${f.buildingLevel}` : '—'}</td>
                         <td className="p-3 text-muted-foreground">{f.fileType}</td>
                         <td className="p-3 text-muted-foreground">{f.fileSize != null ? `${(f.fileSize / 1024).toFixed(1)} KB` : '—'}</td>
                         <td className="p-3 text-muted-foreground">{f.uploadedAt ? formatDate(f.uploadedAt) : '—'}</td>
@@ -346,7 +268,7 @@ export function AIDocumentsContent({ initialProjectId, baseReportsPath }: AIDocu
                             disabled={analyzingId !== null}
                             className="text-sm px-3 py-1.5 rounded-md border bg-primary text-primary-foreground disabled:opacity-50"
                           >
-                            {analyzingId === f.id ? 'Running…' : f.fileType === 'lbo_model' ? 'Run LBO model' : 'Run audit extraction'}
+                            {analyzingId === f.id ? 'Running…' : f.fileType === 'Models' ? 'Run LBO model' : 'Not runnable'}
                           </button>
                         </td>
                       </tr>
@@ -357,42 +279,15 @@ export function AIDocumentsContent({ initialProjectId, baseReportsPath }: AIDocu
             )}
           </div>
 
-          {/* Right: Upload source files per level */}
+          {/* Right: Upload files */}
           <div className="lg:max-w-[320px] space-y-4">
             <div>
-              <h2 className="font-semibold text-lg mb-1">Upload source files</h2>
-              <p className="text-sm text-muted-foreground">Optional PDF/image uploads by level for model audit context.</p>
+              <h2 className="font-semibold text-lg mb-1">Upload files</h2>
+              <p className="text-sm text-muted-foreground">Upload model workbooks and supporting inputs.</p>
             </div>
-            {Array.from({ length: numberOfLevels }, (_, i) => i + 1).map((level) => (
-              <div key={level} className="border rounded-lg bg-card overflow-hidden p-4">
-                <p className="text-sm font-medium mb-2">Source file level {level}</p>
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onDragOver={(e) => onDragOverLevel(level, e)}
-                  onDragLeave={onDragLeaveLevel}
-                  onDrop={(e) => onDropLevel(level, e)}
-                  className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors ${dragOverLevel === level ? 'bg-blue-500/15 border-blue-500 text-blue-700 dark:bg-blue-500/20 dark:border-blue-400 dark:text-blue-300' : 'bg-muted/10 hover:bg-muted/20 border-muted-foreground/25'}`}
-                >
-                  <label className="cursor-pointer block">
-                    <span className={`text-sm font-medium block ${dragOverLevel === level ? 'text-blue-700 dark:text-blue-300' : 'text-muted-foreground'}`}>
-                      {uploading && uploadingLevel === level ? 'Uploading…' : dragOverLevel === level ? 'Drop to upload' : 'Drop file or click'}
-                    </span>
-                    <input
-                      type="file"
-                      className="hidden"
-                      disabled={uploading}
-                      onChange={(e) => onInputChange(level, e)}
-                      accept=".pdf,.png,.jpg,.jpeg,.webp"
-                    />
-                  </label>
-                </div>
-              </div>
-            ))}
-
             <div className="border rounded-lg bg-card overflow-hidden p-4">
-              <h2 className="font-semibold text-lg mb-1">Upload LBO Excel</h2>
-              <p className="text-sm text-muted-foreground">.xlsx model inputs for cashflows and cash sweeps.</p>
+              <h2 className="font-semibold text-lg mb-1">Upload Models</h2>
+              <p className="text-sm text-muted-foreground">Main `.xlsx` model workbooks to run cashflow modeling.</p>
               <label className="cursor-pointer block mt-3">
                 <span
                   className={`text-sm font-medium block rounded-md border px-3 py-2 text-center ${
@@ -409,6 +304,30 @@ export function AIDocumentsContent({ initialProjectId, baseReportsPath }: AIDocu
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) uploadExcelFile(file);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+            </div>
+            <div className="border rounded-lg bg-card overflow-hidden p-4">
+              <h2 className="font-semibold text-lg mb-1">Upload Model Inputs</h2>
+              <p className="text-sm text-muted-foreground">Assumption packs and source inputs (`.xlsx`, `.csv`, `.pdf`).</p>
+              <label className="cursor-pointer block mt-3">
+                <span
+                  className={`text-sm font-medium block rounded-md border px-3 py-2 text-center ${
+                    uploadingInput ? 'text-muted-foreground' : 'bg-background hover:bg-muted/40'
+                  }`}
+                >
+                  {uploadingInput ? 'Uploading…' : 'Choose input file'}
+                </span>
+                <input
+                  type="file"
+                  className="hidden"
+                  disabled={uploadingInput}
+                  accept=".xlsx,.csv,.pdf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) uploadModelInput(file);
                     e.target.value = '';
                   }}
                 />

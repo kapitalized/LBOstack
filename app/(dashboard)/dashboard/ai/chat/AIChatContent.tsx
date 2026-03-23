@@ -225,7 +225,7 @@ export function AIChatContent({ initialProjectId, referenceFileIds, referenceRep
         setAddError((data as { error?: string }).error ?? 'Failed to add to Models');
         return;
       }
-      setReports((prev) => [...prev, { id: (data as { reportId: string }).reportId, reportTitle: (data as { reportTitle: string }).reportTitle, reportType: 'quantity_takeoff', createdAt: new Date().toISOString() }]);
+      setReports((prev) => [...prev, { id: (data as { reportId: string }).reportId, reportTitle: (data as { reportTitle: string }).reportTitle, reportType: 'Models', createdAt: new Date().toISOString() }]);
     } catch {
       setAddError('Failed to add to Models');
     } finally {

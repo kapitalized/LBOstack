@@ -1,13 +1,11 @@
 /**
- * POST: Create a quantity report from chat revision (markdown content).
- * Parses a quantities table from the markdown and adds it to ai_analyses + report_generated
- * so it appears on the Quantities page.
+ * POST: Create an LBO model report from chat revision (markdown content).
+ * Parses a markdown table and persists it as a Models report.
  */
 import { NextResponse } from 'next/server';
 import { getSessionForApi } from '@/lib/auth/session';
 import { db } from '@/lib/db';
-import { project_main, ai_analyses, report_generated } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { ai_analyses, report_generated } from '@/lib/db/schema';
 import { parseMarkdownQuantitiesTable } from '@/lib/ai/parse-markdown-table';
 import { writeLogReport } from '@/lib/ai/logs';
 import { canAccessProject } from '@/lib/org';
@@ -34,7 +32,7 @@ export async function POST(
   const items = parseMarkdownQuantitiesTable(contentMarkdown);
   if (items.length === 0) {
     return NextResponse.json(
-      { error: 'No quantities table found in the content. Paste a markdown table with columns like Label | Value | Unit.' },
+      { error: 'No model table found in the content. Paste a markdown table with columns like Label | Value | Unit.' },
       { status: 400 }
     );
   }
@@ -57,7 +55,7 @@ export async function POST(
     .insert(ai_analyses)
     .values({
       projectId,
-      analysisType: 'quantity_takeoff',
+      analysisType: 'lbo_cashflows',
       analysisResult: analysisPayload as unknown as Record<string, unknown>,
       inputSourceIds: [],
     })
@@ -72,7 +70,7 @@ export async function POST(
     .values({
       projectId,
       reportTitle: title,
-      reportType: 'quantity_takeoff',
+      reportType: 'Models',
       content: contentMarkdown,
       analysisSourceId: analysis.id,
     })
@@ -87,7 +85,7 @@ export async function POST(
     userId: session.userId,
     reportId: report.id,
     analysisId: analysis.id,
-    reportType: 'quantity_takeoff',
+    reportType: 'Models',
     source: 'from_chat',
     fileIds: [],
   });

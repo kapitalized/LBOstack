@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSessionForApi } from '@/lib/auth/session';
 import { callPythonEngine } from '@/lib/python-client';
 import { simulateLboModel } from '@/lib/lbo/lbo-core';
+import type { LboDealSchema } from '@/lib/lbo/types';
 import { db } from '@/lib/db';
 import { project_files, project_main } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
@@ -45,7 +46,7 @@ export async function POST(req: Request) {
 
     let resolvedFileUrl: string | undefined = fileUrl;
     let resolvedFileName: string | undefined = undefined;
-    let resolvedFileRowId: string | undefined = fileId;
+    const resolvedFileRowId: string | undefined = fileId;
 
     if (!resolvedFileUrl) {
       if (!resolvedFileRowId) return NextResponse.json({ error: 'Provide fileUrl or fileId.' }, { status: 400 });
@@ -87,7 +88,7 @@ export async function POST(req: Request) {
 
     if (!deal || typeof deal !== 'object') return NextResponse.json({ error: 'No deal extracted.' }, { status: 422 });
 
-    const model = simulateLboModel(deal as any);
+    const model = simulateLboModel(deal as LboDealSchema);
     const rows = model.schedule.rows;
     const metrics = model.metrics;
     const totals = model.schedule.totals;
@@ -188,7 +189,7 @@ export async function POST(req: Request) {
       userId: session.userId,
       analysisId,
       reportId,
-      reportType: 'lbo_model',
+      reportType: 'Models',
       source: 'python_analyze',
       fileIds: resolvedFileRowId ? [resolvedFileRowId] : [],
     });

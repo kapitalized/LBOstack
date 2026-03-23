@@ -1,5 +1,5 @@
 /**
- * Schema: Neon Auth (neon_auth.*) + construction app tables (11 Mar 26 initial + improvements).
+ * Schema: Neon Auth (neon_auth.*) + LBOstack app tables.
  * Run: npx drizzle-kit generate && npx drizzle-kit migrate
  */
 
@@ -74,8 +74,8 @@ export const org_members = pgTable('org_members', {
   createdAt: timestamp('created_at').defaultNow(),
 });
 
-// ---- MODULE 2: PROJECTS & FILE MANAGEMENT ----
-/** Projects belong to an organisation. Access: project owner OR org member (any role). */
+// ---- MODULE 2: PROJECTS / WORKSPACES & FILE MANAGEMENT ----
+/** Projects (workspaces) belong to an organisation. Access: project owner OR org member (any role). */
 export const project_main = pgTable('project_main', {
   id: uuid('id').defaultRandom().primaryKey(),
   orgId: uuid('org_id').references(() => org_organisations.id, { onDelete: 'cascade' }),
@@ -90,7 +90,7 @@ export const project_main = pgTable('project_main', {
   projectDescription: text('project_description'), // short description
   projectObjectives: text('project_objectives'), // optional; kept for chat context
   country: text('country'),
-  /** Site type for library/compliance: e.g. house, villa, apartment, commercial */
+  /** Legacy construction field; can be repurposed for sector/type during LBO migration. */
   siteType: text('site_type'),
   projectStatus: text('project_status'), // e.g. Design, Pre-construction, In construction, Completed
   shortId: text('short_id'), // unique 6-char for URLs e.g. /project/abc123/my-building
@@ -106,7 +106,7 @@ export const project_files = pgTable('project_files', {
   id: uuid('id').defaultRandom().primaryKey(),
   projectId: uuid('project_id').references(() => project_main.id),
   fileName: text('file_name').notNull(),
-  fileType: text('file_type').notNull(), // 'plan', 'defect_report', 'contract'
+  fileType: text('file_type').notNull(), // e.g. 'Models', 'Model_Inputs'
   /** Building level (1-based) for floorplans; null for other docs. */
   buildingLevel: integer('building_level'),
   blobUrl: text('blob_url').notNull(),
@@ -184,7 +184,7 @@ export const report_generated = pgTable('report_generated', {
   shortId: text('short_id'),
   projectId: uuid('project_id').references(() => project_main.id),
   reportTitle: text('report_title').notNull(),
-  reportType: text('report_type').notNull(), // 'quantity_takeoff', 'defect_audit'
+  reportType: text('report_type').notNull(), // e.g. 'Models'
   /** Building level (1-based) when report is for a specific level. */
   buildingLevel: integer('building_level'),
   content: text('content'),
@@ -219,209 +219,178 @@ export const logs_reports = pgTable('logs_reports', {
   userId: uuid('user_id').references(() => user_profiles.id),
   reportId: uuid('report_id').references(() => report_generated.id).notNull(),
   analysisId: uuid('analysis_id').references(() => ai_analyses.id).notNull(),
-  reportType: text('report_type').notNull(), // 'quantity_takeoff', 'defect_audit'
+  reportType: text('report_type').notNull(), // e.g. 'Models'
   source: text('source'), // 'pipeline', 'from_chat', 'python_analyze'
   /** File(s) that were analysed to produce this report (project_files.id). Enables link back from report to source files. */
   fileIds: jsonb('file_ids'), // array of UUID strings
 });
 
-// ---- MODULE 6: REFERENCE LIBRARY (global, admin-maintained) ----
-// See docs/Library_Setup.md and docs/Library_Populate.md
-
-export const ref_materials = pgTable('ref_materials', {
+// ---- MODULE 6: FINANCE REFERENCE LIBRARY (LBO/DCF) ----
+/** Sovereign risk-free rate curves by country and tenor, versioned by effective date. */
+export const ref_finance_risk_free_rates = pgTable('ref_finance_risk_free_rates', {
   id: uuid('id').defaultRandom().primaryKey(),
-  category: text('category').notNull(),
-  subcategory: text('subcategory'),
-  name: text('name').notNull(),
-  standard_grade: text('standard_grade'),
-  density_kg_m3: decimal('density_kg_m3'),
-  unit_cost_estimate: decimal('unit_cost_estimate'),
-  properties: jsonb('properties'),
-  source_id: text('source_id'),
+  country_code: text('country_code').notNull(), // ISO-3166-1 alpha-2 (e.g. US, GB, PK)
+  currency_code: text('currency_code').notNull(), // ISO-4217 (e.g. USD, GBP, PKR)
+  tenor_years: decimal('tenor_years').notNull(), // 1, 2, 5, 10, 30...
+  rate_percent: decimal('rate_percent').notNull(),
   source_name: text('source_name'),
-  publication_year: integer('publication_year'),
-  confidence_level: decimal('confidence_level'),
-  effective_from: timestamp('effective_from').notNull().defaultNow(),
-  effective_to: timestamp('effective_to'),
-  superseded_by: uuid('superseded_by'),
-  created_at: timestamp('created_at').defaultNow(),
-  updated_at: timestamp('updated_at').defaultNow(),
-});
-
-export const ref_building_compositions = pgTable('ref_building_compositions', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  building_category: text('building_category').notNull(),
-  building_subtype: text('building_subtype'),
-  structure_type: text('structure_type'),
-  concrete_intensity_m3_per_m2: decimal('concrete_intensity_m3_per_m2'),
-  steel_intensity_kg_per_m2: decimal('steel_intensity_kg_per_m2'),
-  rebar_intensity_kg_per_m3_concrete: decimal('rebar_intensity_kg_per_m3_concrete'),
-  brick_intensity_m3_per_m2: decimal('brick_intensity_m3_per_m2'),
-  timber_intensity_m3_per_m2: decimal('timber_intensity_m3_per_m2'),
-  glass_intensity_kg_per_m2: decimal('glass_intensity_kg_per_m2'),
-  region: text('region'),
-  climate_zone: text('climate_zone'),
-  seismic_zone: text('seismic_zone'),
-  confidence_interval_low: decimal('confidence_interval_low'),
-  confidence_interval_high: decimal('confidence_interval_high'),
-  sample_size: integer('sample_size'),
-  source_id: text('source_id'),
-  source_name: text('source_name'),
-  publication_year: integer('publication_year'),
-  confidence_level: decimal('confidence_level'),
-  properties: jsonb('properties'),
-  effective_from: timestamp('effective_from').notNull().defaultNow(),
-  effective_to: timestamp('effective_to'),
-  superseded_by: uuid('superseded_by'),
-  created_at: timestamp('created_at').defaultNow(),
-  updated_at: timestamp('updated_at').defaultNow(),
-});
-
-export const ref_wall_types = pgTable('ref_wall_types', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  wall_category: text('wall_category').notNull(),
-  wall_type: text('wall_type').notNull(),
-  load_bearing: boolean('load_bearing').default(false),
-  exterior_finish: text('exterior_finish'),
-  interior_finish: text('interior_finish'),
-  typical_thickness_mm: decimal('typical_thickness_mm'),
-  density_kg_m3: decimal('density_kg_m3'),
-  weight_kg_per_m2: decimal('weight_kg_per_m2'),
-  u_value_w_per_m2k: decimal('u_value_w_per_m2k'),
-  bricks_per_m2: decimal('bricks_per_m2'),
-  mortar_kg_per_m2: decimal('mortar_kg_per_m2'),
-  reinforcement_kg_per_m2: decimal('reinforcement_kg_per_m2'),
-  properties: jsonb('properties'),
-  source_id: text('source_id'),
-  confidence_level: decimal('confidence_level'),
-  effective_from: timestamp('effective_from').notNull().defaultNow(),
-  effective_to: timestamp('effective_to'),
-  created_at: timestamp('created_at').defaultNow(),
-});
-
-export const ref_roof_types = pgTable('ref_roof_types', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  roof_form: text('roof_form').notNull(),
-  structure_material: text('structure_material'),
-  covering_material: text('covering_material'),
-  typical_span_m: decimal('typical_span_m'),
-  typical_pitch_degrees: decimal('typical_pitch_degrees'),
-  typical_weight_kg_per_m2: decimal('typical_weight_kg_per_m2'),
-  structure_weight_kg_per_m2: decimal('structure_weight_kg_per_m2'),
-  covering_weight_kg_per_m2: decimal('covering_weight_kg_per_m2'),
-  timber_intensity_m3_per_m2: decimal('timber_intensity_m3_per_m2'),
-  steel_intensity_kg_per_m2: decimal('steel_intensity_kg_per_m2'),
-  concrete_intensity_m3_per_m2: decimal('concrete_intensity_m3_per_m2'),
-  properties: jsonb('properties'),
-  source_id: text('source_id'),
-  confidence_level: decimal('confidence_level'),
-  effective_from: timestamp('effective_from').notNull().defaultNow(),
-  effective_to: timestamp('effective_to'),
-  created_at: timestamp('created_at').defaultNow(),
-});
-
-export const ref_flooring_types = pgTable('ref_flooring_types', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  flooring_category: text('flooring_category').notNull(),
-  flooring_type: text('flooring_type').notNull(),
-  construction_method: text('construction_method'),
-  typical_thickness_mm: decimal('typical_thickness_mm'),
-  density_kg_m3: decimal('density_kg_m3'),
-  weight_kg_per_m2: decimal('weight_kg_per_m2'),
-  requires_screed: boolean('requires_screed').default(false),
-  screed_thickness_mm: decimal('screed_thickness_mm'),
-  screed_density_kg_m3: decimal('screed_density_kg_m3'),
-  properties: jsonb('properties'),
-  source_id: text('source_id'),
-  confidence_level: decimal('confidence_level'),
-  effective_from: timestamp('effective_from').notNull().defaultNow(),
-  effective_to: timestamp('effective_to'),
-  created_at: timestamp('created_at').defaultNow(),
-});
-
-export const ref_standards = pgTable('ref_standards', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  authority: text('authority').notNull(),
-  code_number: text('code_number'),
-  code_name: text('code_name').notNull(),
-  section: text('section').notNull(),
-  clause: text('clause'),
-  requirement_type: text('requirement_type'),
-  requirement_value_numeric: decimal('requirement_value_numeric'),
-  requirement_unit: text('requirement_unit'),
-  requirement_text: text('requirement_text'),
-  description: text('description'),
-  jurisdiction: text('jurisdiction'),
-  application: text('application'),
-  building_types: text('building_types'),
-  evaluation_formula: text('evaluation_formula'),
   source_url: text('source_url'),
-  pdf_reference: text('pdf_reference'),
-  effective_from: timestamp('effective_from'),
-  effective_to: timestamp('effective_to'),
-  superseded_by: uuid('superseded_by'),
-  created_at: timestamp('created_at').defaultNow(),
-  updated_at: timestamp('updated_at').defaultNow(),
-});
-
-export const ref_unit_conversions = pgTable('ref_unit_conversions', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  from_unit: text('from_unit').notNull(),
-  to_unit: text('to_unit').notNull(),
-  conversion_factor: decimal('conversion_factor').notNull(),
-  category: text('category'),
-  formula: text('formula'),
-  description: text('description'),
-  source_id: text('source_id'),
-  created_at: timestamp('created_at').defaultNow(),
-});
-
-export const ref_material_components = pgTable('ref_material_components', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  parent_material_id: uuid('parent_material_id').references(() => ref_materials.id),
-  component_material_id: uuid('component_material_id').references(() => ref_materials.id),
-  proportion_by_mass: decimal('proportion_by_mass'),
-  proportion_by_volume: decimal('proportion_by_volume'),
-  mix_designation: text('mix_designation'),
-  cement_kg_per_m3: decimal('cement_kg_per_m3'),
-  water_kg_per_m3: decimal('water_kg_per_m3'),
-  fine_aggregate_kg_per_m3: decimal('fine_aggregate_kg_per_m3'),
-  coarse_aggregate_kg_per_m3: decimal('coarse_aggregate_kg_per_m3'),
-  admixtures: jsonb('admixtures'),
-  water_cement_ratio: decimal('water_cement_ratio'),
-  expected_strength_mpa: decimal('expected_strength_mpa'),
-  source_id: text('source_id'),
-  confidence_level: decimal('confidence_level'),
-  effective_from: timestamp('effective_from').notNull().defaultNow(),
+  observed_at: timestamp('observed_at').notNull(),
+  effective_from: timestamp('effective_from').defaultNow().notNull(),
   effective_to: timestamp('effective_to'),
   created_at: timestamp('created_at').defaultNow(),
 });
 
-export const ref_regional_factors = pgTable('ref_regional_factors', {
+/** Equity risk premia by country/region for CAPM/WACC assumptions. */
+export const ref_finance_equity_risk_premiums = pgTable('ref_finance_equity_risk_premiums', {
   id: uuid('id').defaultRandom().primaryKey(),
-  region: text('region').notNull(),
-  country: text('country'),
-  climate_zone: text('climate_zone'),
-  concrete_factor: decimal('concrete_factor'),
-  steel_factor: decimal('steel_factor'),
-  timber_factor: decimal('timber_factor'),
-  labor_cost_index: decimal('labor_cost_index'),
-  material_cost_index: decimal('material_cost_index'),
-  typical_foundation_type: text('typical_foundation_type'),
-  typical_floor_to_floor_height_m: decimal('typical_floor_to_floor_height_m'),
-  source_id: text('source_id'),
-  confidence_level: decimal('confidence_level'),
-  effective_from: timestamp('effective_from').notNull().defaultNow(),
+  country_code: text('country_code').notNull(),
+  region: text('region'),
+  erp_percent: decimal('erp_percent').notNull(),
+  source_name: text('source_name'),
+  source_url: text('source_url'),
+  observed_at: timestamp('observed_at').notNull(),
+  effective_from: timestamp('effective_from').defaultNow().notNull(),
   effective_to: timestamp('effective_to'),
   created_at: timestamp('created_at').defaultNow(),
 });
 
-export const ref_knowledge_nodes = pgTable('ref_knowledge_nodes', {
+/** Levered/unlevered beta references for sectors and sub-sectors. */
+export const ref_finance_sector_betas = pgTable('ref_finance_sector_betas', {
   id: uuid('id').defaultRandom().primaryKey(),
-  content: text('content').notNull(),
-  source_standard_id: uuid('source_standard_id').references(() => ref_standards.id),
-  metadata: jsonb('metadata'),
+  sector: text('sector').notNull(),
+  subsector: text('subsector'),
+  region: text('region'),
+  beta_unlevered: decimal('beta_unlevered'),
+  beta_levered: decimal('beta_levered'),
+  net_debt_to_equity: decimal('net_debt_to_equity'),
+  tax_rate_percent: decimal('tax_rate_percent'),
+  sample_size: integer('sample_size'),
+  source_name: text('source_name'),
+  source_url: text('source_url'),
+  observed_at: timestamp('observed_at'),
+  effective_from: timestamp('effective_from').defaultNow().notNull(),
+  effective_to: timestamp('effective_to'),
   created_at: timestamp('created_at').defaultNow(),
+});
+
+/** Credit spread references for debt pricing by rating and tenor. */
+export const ref_finance_credit_spreads = pgTable('ref_finance_credit_spreads', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  region: text('region'),
+  currency_code: text('currency_code').notNull(),
+  rating_bucket: text('rating_bucket').notNull(), // e.g. BBB, BB, B
+  seniority: text('seniority').notNull(), // e.g. senior_secured, senior_unsecured, mezz
+  tenor_years: decimal('tenor_years'),
+  spread_bps: integer('spread_bps').notNull(),
+  source_name: text('source_name'),
+  source_url: text('source_url'),
+  observed_at: timestamp('observed_at').notNull(),
+  effective_from: timestamp('effective_from').defaultNow().notNull(),
+  effective_to: timestamp('effective_to'),
+  created_at: timestamp('created_at').defaultNow(),
+});
+
+/** Tax rate references used for NOPAT and post-tax cost of debt assumptions. */
+export const ref_finance_tax_rates = pgTable('ref_finance_tax_rates', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  country_code: text('country_code').notNull(),
+  tax_type: text('tax_type').notNull().default('corporate_income'),
+  rate_percent: decimal('rate_percent').notNull(),
+  source_name: text('source_name'),
+  source_url: text('source_url'),
+  effective_from: timestamp('effective_from').defaultNow().notNull(),
+  effective_to: timestamp('effective_to'),
+  created_at: timestamp('created_at').defaultNow(),
+});
+
+/** Trading and transaction multiple comps by sector, region, and period. */
+export const ref_finance_valuation_multiples = pgTable('ref_finance_valuation_multiples', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  sector: text('sector').notNull(),
+  subsector: text('subsector'),
+  region: text('region'),
+  metric: text('metric').notNull(), // e.g. EV/EBITDA, EV/Revenue, P/E
+  percentile_25: decimal('percentile_25'),
+  median: decimal('median'),
+  percentile_75: decimal('percentile_75'),
+  sample_size: integer('sample_size'),
+  source_name: text('source_name'),
+  source_url: text('source_url'),
+  observed_at: timestamp('observed_at').notNull(),
+  effective_from: timestamp('effective_from').defaultNow().notNull(),
+  effective_to: timestamp('effective_to'),
+  created_at: timestamp('created_at').defaultNow(),
+});
+
+// ---- MODULE 7: LBO OUTPUTS (reports, artifacts, scenarios) ----
+/** One deterministic model run per model/version/scenario. */
+export const lbo_model_runs = pgTable('lbo_model_runs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  projectId: uuid('project_id').references(() => project_main.id).notNull(),
+  fileId: uuid('file_id').references(() => project_files.id),
+  scenarioName: text('scenario_name').notNull().default('Base Case'),
+  modelVersion: integer('model_version').notNull().default(1),
+  assumptions: jsonb('assumptions').notNull(),
+  resultsSummary: jsonb('results_summary').notNull(), // IRR, MOIC, leverage, DSCR...
+  scheduleRows: jsonb('schedule_rows'), // normalized waterfall/cashflow rows
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+/** Audit outputs that explain checks, exceptions, and model integrity findings. */
+export const lbo_model_audits = pgTable('lbo_model_audits', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  modelRunId: uuid('model_run_id').references(() => lbo_model_runs.id, { onDelete: 'cascade' }).notNull(),
+  auditType: text('audit_type').notNull(), // e.g. consistency, formulas, assumptions
+  severity: text('severity').notNull().default('info'), // info | warning | error
+  findings: jsonb('findings').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+/** Presentation bundles for printable model packs and stakeholder outputs. */
+export const lbo_model_presentations = pgTable('lbo_model_presentations', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  modelRunId: uuid('model_run_id').references(() => lbo_model_runs.id, { onDelete: 'cascade' }).notNull(),
+  title: text('title').notNull(),
+  format: text('format').notNull().default('pdf'), // pdf | pptx | html
+  content: text('content'), // markdown/html body
+  blobUrl: text('blob_url'),
+  blobKey: text('blob_key'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+/** Normalized chart/table artifacts produced from a model run. */
+export const lbo_model_artifacts = pgTable('lbo_model_artifacts', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  modelRunId: uuid('model_run_id').references(() => lbo_model_runs.id, { onDelete: 'cascade' }).notNull(),
+  artifactType: text('artifact_type').notNull(), // graph | waterfall | table
+  title: text('title').notNull(),
+  spec: jsonb('spec').notNull(), // chart/table spec or data payload
+  blobUrl: text('blob_url'),
+  blobKey: text('blob_key'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+/** Scenario definitions for case-based planning (base, upside, downside, custom). */
+export const lbo_scenarios = pgTable('lbo_scenarios', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  projectId: uuid('project_id').references(() => project_main.id, { onDelete: 'cascade' }).notNull(),
+  name: text('name').notNull(),
+  scenarioType: text('scenario_type').notNull().default('custom'), // base | upside | downside | custom
+  assumptionOverrides: jsonb('assumption_overrides').notNull(),
+  createdByUserId: uuid('created_by_user_id').references(() => user_profiles.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+/** Sensitivity grid outputs for variables such as entry multiple, growth, and exit multiple. */
+export const lbo_sensitivity_runs = pgTable('lbo_sensitivity_runs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  modelRunId: uuid('model_run_id').references(() => lbo_model_runs.id, { onDelete: 'cascade' }).notNull(),
+  variableX: text('variable_x').notNull(),
+  variableY: text('variable_y'),
+  gridDefinition: jsonb('grid_definition').notNull(),
+  resultsGrid: jsonb('results_grid').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
 // ---- APP SETTINGS (admin-configurable, single row) ----

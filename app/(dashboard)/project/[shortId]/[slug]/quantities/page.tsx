@@ -15,7 +15,7 @@ interface ReportRow {
   runDurationMs?: number | null;
 }
 
-interface QuantityItem {
+interface ModelItem {
   label?: string;
   value?: number;
   unit?: string;
@@ -34,7 +34,7 @@ export default function ProjectQuantitiesPage() {
   const [reportDetail, setReportDetail] = useState<{
     reportTitle: string;
     content_md?: string | null;
-    data_payload: QuantityItem[];
+    data_payload: ModelItem[];
   } | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
@@ -45,7 +45,7 @@ export default function ProjectQuantitiesPage() {
       .then((r) => (r.ok ? r.json() : []))
       .then((data: ReportRow[]) => {
         const list = Array.isArray(data) ? data : [];
-        setReports(list.filter((r) => r.reportType === 'quantity_takeoff'));
+        setReports(list.filter((r) => r.reportType === 'Models'));
       })
       .catch(() => setReports([]))
       .finally(() => setLoading(false));
@@ -65,9 +65,9 @@ export default function ProjectQuantitiesPage() {
         if (data) {
           const payload = Array.isArray(data.data_payload) ? data.data_payload : [];
           setReportDetail({
-            reportTitle: data.reportTitle ?? 'Quantity takeoff',
+            reportTitle: data.reportTitle ?? 'LBO model report',
             content_md: data.content_md ?? data.content,
-            data_payload: payload as QuantityItem[],
+            data_payload: payload as ModelItem[],
           });
         } else {
           setReportDetail(null);

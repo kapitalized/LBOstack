@@ -4,11 +4,10 @@
  * Report viewer: markdown content, data table, pipeline step trace, CSV export, and detection overlay.
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { downloadCSV } from '@/lib/ai/export';
 import type { AuditItem } from '@/lib/ai/citation-audit';
-import PlanOverlayViewer, { type OverlayItem } from './PlanOverlayViewer';
 import { formatDateTime } from '@/lib/format-date';
 
 export interface StepTraceEntry {
@@ -61,59 +60,6 @@ interface AIReportViewerProps {
 
 function isAuditItem(x: unknown): x is AuditItem {
   return typeof x === 'object' && x !== null && 'label' in x && 'value' in x;
-}
-
-function DetectionOverlaySection({ reportId }: { reportId: string }) {
-  const [open, setOpen] = useState(false);
-  const [overlay, setOverlay] = useState<{
-    imageUrl: string | null;
-    items: OverlayItem[];
-    windows?: OverlayItem[];
-    doors?: OverlayItem[];
-  } | null>(null);
-
-  useEffect(() => {
-    if (!open || !reportId) return;
-    fetch(`/api/reports/${reportId}/overlay`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) =>
-        data &&
-        setOverlay({
-          imageUrl: data.imageUrl ?? null,
-          items: data.items ?? [],
-          windows: data.windows ?? [],
-          doors: data.doors ?? [],
-        })
-      )
-      .catch(() => setOverlay({ imageUrl: null, items: [] }));
-  }, [open, reportId]);
-
-  return (
-    <div className="border rounded-lg bg-muted/20 overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between px-4 py-3 text-left text-sm font-medium text-foreground hover:bg-muted/30"
-      >
-        <span>Detection boxes on plan</span>
-        <span className="text-muted-foreground">{open ? '▼' : '▶'}</span>
-      </button>
-      {open && (
-        <div className="border-t p-4">
-          {overlay === null ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : (
-            <PlanOverlayViewer
-              imageUrl={overlay.imageUrl}
-              items={overlay.items}
-              windows={overlay.windows}
-              doors={overlay.doors}
-            />
-          )}
-        </div>
-      )}
-    </div>
-  );
 }
 
 function PipelineStepsSection({ steps }: { steps: StepTraceEntry[] }) {
@@ -335,10 +281,6 @@ export default function AIReportViewer({ report, isLoading }: AIReportViewerProp
       {run?.stepTrace && run.stepTrace.length > 0 && (
         <PipelineStepsSection steps={run.stepTrace} />
       )}
-      {report?.id && (
-        <DetectionOverlaySection reportId={report.id} />
-      )}
-
       {/* Formatted report (markdown) first */}
       {content ? (
         <div className="prose prose-sm dark:prose-invert max-w-none">
@@ -347,7 +289,7 @@ export default function AIReportViewer({ report, isLoading }: AIReportViewerProp
       ) : null}
 
       {/* LBO: cash sweep schedule table (structured data from /api/lbo/run) */}
-      {report?.reportType === 'lbo_model' && lboScheduleRows.length > 0 && (
+      {report?.reportType === 'Models' && lboScheduleRows.length > 0 && (
         <div className="border rounded-lg bg-muted/20 p-3 text-sm">
           <p className="text-muted-foreground font-medium mb-2">Cash Sweep Schedule</p>
           <div className="overflow-x-auto">

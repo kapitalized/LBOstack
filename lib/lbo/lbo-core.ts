@@ -156,7 +156,7 @@ function buildScheduleWithProperCashTracking(
     const isExitPeriod = periodIndex === deal.periodCount - 1;
     const opCf = deal.operatingCashFlows[periodIndex] ?? 0;
 
-    let cashAvailable = beginningCash + opCf + (isExitPeriod ? exitValue : 0);
+    const cashAvailable = beginningCash + opCf + (isExitPeriod ? exitValue : 0);
 
     const interestDueByTranche: Record<string, number> = {};
     const totalInterestDue = sortedTranches.reduce((sum, t) => {

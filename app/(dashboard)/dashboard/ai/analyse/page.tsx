@@ -109,7 +109,11 @@ export default function AnalysePage() {
     setAnalyseSuccess(null);
     setAnalyzing(true);
     try {
-      const res = await fetch('/api/ai/run', {
+      if (file.fileType !== 'Models') {
+        setAnalyseError('Select a file with type "Models" to run modeling.');
+        return;
+      }
+      const res = await fetch('/api/lbo/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -148,9 +152,7 @@ export default function AnalysePage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Modeling</h1>
-      <p className="text-muted-foreground text-sm mt-1">
-        Select an input file, run LBO modeling or audit extraction, then review statements and waterfall outputs.
-      </p>
+      <p className="text-muted-foreground text-sm mt-1">Select a model workbook and run deterministic LBO modeling.</p>
 
       {/* Top card: Select input file and run modeling */}
       <div className="rounded-lg border bg-card p-4">

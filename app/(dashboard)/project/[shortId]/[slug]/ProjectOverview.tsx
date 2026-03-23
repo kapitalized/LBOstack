@@ -43,7 +43,7 @@ export function ProjectOverview({
 
   const docsCount = files.length;
   const reportsCount = reports.length;
-  const quantitiesCount = reports.filter((r) => r.reportType === 'quantity_takeoff').length;
+  const quantitiesCount = reports.filter((r) => r.reportType === 'Models').length;
   const levels = Math.max(1, project?.numberOfLevels ?? 1);
   const filesByLevel = new Map<number, ProjectFile[]>();
   for (const f of files) {

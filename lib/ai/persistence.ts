@@ -36,7 +36,7 @@ export async function persistPipelineResult(params: PersistPipelineParams): Prom
   reportId: string;
   reportShortId: string | null;
 }> {
-  const { projectId, fileId, buildingLevel, result, reportTitle = 'AI Analysis Report', reportType = 'quantity_takeoff', runMetadata, modelsUsed } = params;
+  const { projectId, fileId, buildingLevel, result, reportTitle = 'AI Analysis Report', reportType = 'Models', runMetadata, modelsUsed } = params;
   const tokenUsage = result.tokenUsage ? (result.tokenUsage as unknown as Record<string, unknown>) : null;
   const modelsUsedJson = modelsUsed ? (modelsUsed as unknown as Record<string, unknown>) : null;
 
@@ -89,7 +89,7 @@ export async function persistPipelineResult(params: PersistPipelineParams): Prom
     content: synthesis?.content_md ?? null,
     analysisSourceId: analysisId,
   };
-  let report: { id: string; shortId?: string | null } | undefined;
+  const report: { id: string; shortId?: string | null } | undefined = row ? { id: row.id, shortId: row.shortId } : undefined;
   let reportShortId: string | null = null;
   try {
     reportShortId = generateShortId();
@@ -158,8 +158,8 @@ export async function persistAnalyzeResult(params: PersistAnalyzeParams): Promis
     .values({
       projectId,
       shortId: reportShortId,
-      reportTitle: 'Quantity takeoff',
-      reportType: 'quantity_takeoff',
+      reportTitle: 'Models',
+      reportType: 'Models',
       content: contentMd,
       analysisSourceId: analysisId,
     })
@@ -188,7 +188,7 @@ export interface PersistLboModelParams {
 /**
  * Persist MVP LBO run:
  * - `ai_analyses.analysisType = 'lbo_cashflows'`
- * - `report_generated.reportType = 'lbo_model'`
+ * - `report_generated.reportType = 'Models'`
  */
 export async function persistLboModelResult(params: PersistLboModelParams): Promise<{
   analysisId: string;
@@ -213,8 +213,6 @@ export async function persistLboModelResult(params: PersistLboModelParams): Prom
   const analysisId = analysis.id;
 
   let reportShortId: string | null = null;
-  let report: { id: string; shortId?: string | null } | undefined;
-
   reportShortId = generateShortId();
   for (let attempt = 0; attempt < 5; attempt++) {
     const existing = await db.select({ id: report_generated.id }).from(report_generated).where(eq(report_generated.shortId, reportShortId)).limit(1);
@@ -228,13 +226,13 @@ export async function persistLboModelResult(params: PersistLboModelParams): Prom
       projectId,
       shortId: reportShortId,
       reportTitle,
-      reportType: 'lbo_model',
+      reportType: 'Models',
       content: contentMarkdown,
       analysisSourceId: analysisId,
     })
     .returning({ id: report_generated.id, shortId: report_generated.shortId });
 
-  report = row ? { id: row.id, shortId: row.shortId } : undefined;
+  const report: { id: string; shortId?: string | null } | undefined = row ? { id: row.id, shortId: row.shortId } : undefined;
   if (!report?.id) throw new Error('Failed to insert LBO report');
 
   return { analysisId, reportId: report.id, reportShortId: report.shortId ?? reportShortId };

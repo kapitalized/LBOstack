@@ -23,12 +23,6 @@ export default function AILayout({ children }: { children: React.ReactNode }) {
         >
           Documents
         </Link>
-        <Link
-          href="/dashboard/ai/floorplan-test"
-          className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50"
-        >
-          Extraction test
-        </Link>
       </nav>
       <div className="flex-1 min-h-0">
         <Suspense fallback={<div className="p-6 text-muted-foreground">Loading…</div>}>
