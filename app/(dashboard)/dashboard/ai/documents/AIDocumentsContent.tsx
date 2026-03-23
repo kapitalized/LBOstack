@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * AI Documents — project selector, upload, file list, Run analysis per file.
+ * AI Documents — project selector, uploads, and model runs per file.
  */
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -239,7 +239,7 @@ export function AIDocumentsContent({ initialProjectId, baseReportsPath }: AIDocu
       <div>
         <h1 className="text-2xl font-bold">Documents</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Upload files, then run AI analysis. Results appear in Analyse.
+          Upload source documents and Excel models, then run extraction + modeling. Results appear in Modeling.
         </p>
       </div>
 
@@ -252,9 +252,9 @@ export function AIDocumentsContent({ initialProjectId, baseReportsPath }: AIDocu
       {successMessage && (
         <div className="rounded-lg border border-green-600/50 bg-green-500/10 px-4 py-2 text-sm text-green-800 dark:text-green-200 flex items-center justify-between gap-2 flex-wrap">
           <span>
-            Analysis run successfully using {successMessage.modelName}.{' '}
+            Model run successfully using {successMessage.modelName}.{' '}
             <Link
-              href={baseReportsPath && successMessage.reportShortId ? `${baseReportsPath}/${successMessage.reportShortId}` : `/dashboard/ai/analyse?projectId=${projectId}&reportId=${successMessage.reportId}`}
+              href={baseReportsPath && successMessage.reportShortId ? `${baseReportsPath}/${successMessage.reportShortId}` : `/dashboard/ai/modeling?projectId=${projectId}&reportId=${successMessage.reportId}`}
               className="font-medium underline hover:no-underline"
             >
               See report
@@ -297,8 +297,8 @@ export function AIDocumentsContent({ initialProjectId, baseReportsPath }: AIDocu
                 <p className="text-sm text-muted-foreground mt-0.5">All uploaded files for this project</p>
               </div>
               {initialProjectId && (
-                <Link href={baseReportsPath ?? `/dashboard/ai/analyse?projectId=${projectId}`} className="text-sm text-primary hover:underline shrink-0">
-                  View in Analyse
+                <Link href={baseReportsPath ?? `/dashboard/ai/modeling?projectId=${projectId}`} className="text-sm text-primary hover:underline shrink-0">
+                  View in Modeling
                 </Link>
               )}
             </div>
@@ -346,7 +346,7 @@ export function AIDocumentsContent({ initialProjectId, baseReportsPath }: AIDocu
                             disabled={analyzingId !== null}
                             className="text-sm px-3 py-1.5 rounded-md border bg-primary text-primary-foreground disabled:opacity-50"
                           >
-                            {analyzingId === f.id ? 'Running…' : f.fileType === 'lbo_model' ? 'Run LBO model' : 'Run analysis'}
+                            {analyzingId === f.id ? 'Running…' : f.fileType === 'lbo_model' ? 'Run LBO model' : 'Run audit extraction'}
                           </button>
                         </td>
                       </tr>
@@ -357,15 +357,15 @@ export function AIDocumentsContent({ initialProjectId, baseReportsPath }: AIDocu
             )}
           </div>
 
-          {/* Right: Upload floorplan per level */}
+          {/* Right: Upload source files per level */}
           <div className="lg:max-w-[320px] space-y-4">
             <div>
-              <h2 className="font-semibold text-lg mb-1">Upload floorplans</h2>
-              <p className="text-sm text-muted-foreground">One per level. PDF or image. Then run analysis from the list.</p>
+              <h2 className="font-semibold text-lg mb-1">Upload source files</h2>
+              <p className="text-sm text-muted-foreground">Optional PDF/image uploads by level for model audit context.</p>
             </div>
             {Array.from({ length: numberOfLevels }, (_, i) => i + 1).map((level) => (
               <div key={level} className="border rounded-lg bg-card overflow-hidden p-4">
-                <p className="text-sm font-medium mb-2">Floorplan level {level}</p>
+                <p className="text-sm font-medium mb-2">Source file level {level}</p>
                 <div
                   role="button"
                   tabIndex={0}

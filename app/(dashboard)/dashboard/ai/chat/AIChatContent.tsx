@@ -222,12 +222,12 @@ export function AIChatContent({ initialProjectId, referenceFileIds, referenceRep
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setAddError((data as { error?: string }).error ?? 'Failed to add to Quantities');
+        setAddError((data as { error?: string }).error ?? 'Failed to add to Models');
         return;
       }
       setReports((prev) => [...prev, { id: (data as { reportId: string }).reportId, reportTitle: (data as { reportTitle: string }).reportTitle, reportType: 'quantity_takeoff', createdAt: new Date().toISOString() }]);
     } catch {
-      setAddError('Failed to add to Quantities');
+      setAddError('Failed to add to Models');
     } finally {
       setAddingMessageId(null);
     }
@@ -394,10 +394,10 @@ export function AIChatContent({ initialProjectId, referenceFileIds, referenceRep
                       disabled={!!addingMessageId}
                       className="text-xs text-primary hover:underline disabled:opacity-50"
                     >
-                      {addingMessageId === m.id ? 'Adding…' : 'Add to Quantities'}
+                      {addingMessageId === m.id ? 'Adding…' : 'Add to Models'}
                     </button>
                     {addingMessageId === m.id ? null : (
-                      <span className="text-xs text-muted-foreground">Saves revised measurements to Quantities page</span>
+                      <span className="text-xs text-muted-foreground">Saves revised model output to Models page</span>
                     )}
                   </div>
                 )}

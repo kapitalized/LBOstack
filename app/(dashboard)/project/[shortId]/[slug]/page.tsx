@@ -13,7 +13,7 @@ export default async function ProjectHomePage({ params }: Props) {
       <ProjectNav shortId={shortId} slug={slug} />
       <div>
         <ProjectPageTitle />
-        <p className="mt-2 text-muted-foreground">Overview, floorplan and actions.</p>
+        <p className="mt-2 text-muted-foreground">Overview, LBO model inputs, and workflow actions.</p>
       </div>
       <ProjectOverview basePath={base} />
     </div>

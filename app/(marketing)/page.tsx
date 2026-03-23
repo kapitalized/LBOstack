@@ -7,10 +7,10 @@ export default function MarketingPage() {
       {/* Hero */}
       <section className="px-6 py-20 text-center">
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-          Floorplan & materials estimation, simplified
+          LBO modeling and deal auditing, simplified
         </h1>
         <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-          Upload floorplans, get accurate room areas and material takeoffs. Built for contractors and estimators.
+          Upload Excel models or assumptions, generate cashflow statements, run cash sweeps, and review waterfall graphs.
         </p>
         <div className="mt-10 flex flex-wrap justify-center gap-4">
           <Link
@@ -34,22 +34,22 @@ export default function MarketingPage() {
         <div className="mx-auto max-w-4xl">
           <h2 className="text-2xl font-semibold text-center mb-10">Why {BRAND.name}</h2>
           <div className="grid gap-8 sm:grid-cols-3 text-center">
-            <div>
-              <h3 className="font-semibold" style={{ color: BRAND.colors.primary }}>Upload & measure</h3>
-              <p className="mt-2 text-muted-foreground text-sm">
-                Drop PDF or image floorplans; we extract rooms and areas automatically.
+            <div className="rounded-xl border-2 border-oilplot-ink bg-oilplot-ink px-5 py-6 shadow-retro-sm">
+              <h3 className="font-semibold text-oilplot-cream">Upload & measure</h3>
+              <p className="mt-2 text-sm text-oilplot-cream/90">
+                Upload source Excel files and assumptions; we extract deal inputs into a structured model.
               </p>
             </div>
-            <div>
-              <h3 className="font-semibold" style={{ color: BRAND.colors.primary }}>Material takeoffs</h3>
-              <p className="mt-2 text-muted-foreground text-sm">
-                Get quantities for flooring, paint, trim, and more from your plans.
+            <div className="rounded-xl border-2 border-oilplot-ink bg-oilplot-ink px-5 py-6 shadow-retro-sm">
+              <h3 className="font-semibold text-oilplot-cream">Cashflows & sweeps</h3>
+              <p className="mt-2 text-sm text-oilplot-cream/90">
+                Run deterministic LBO cashflows, debt paydown, and senior-first cash sweep waterfalls.
               </p>
             </div>
-            <div>
-              <h3 className="font-semibold" style={{ color: BRAND.colors.primary }}>Export & share</h3>
-              <p className="mt-2 text-muted-foreground text-sm">
-                Export to spreadsheets or send estimates to your team and clients.
+            <div className="rounded-xl border-2 border-oilplot-ink bg-oilplot-ink px-5 py-6 shadow-retro-sm">
+              <h3 className="font-semibold text-oilplot-cream">Audit & reporting</h3>
+              <p className="mt-2 text-sm text-oilplot-cream/90">
+                Generate review-ready statements, waterfall summaries, and audit outputs for IC discussions.
               </p>
             </div>
           </div>
@@ -59,7 +59,7 @@ export default function MarketingPage() {
       {/* CTA + nav */}
       <section className="px-6 py-16 text-center">
         <p className="text-muted-foreground mb-6">
-          Ready to estimate faster? Go to the app, or explore the rest of the site.
+          Ready to model faster? Go to the app, or explore the rest of the site.
         </p>
         <div className="flex flex-wrap justify-center gap-6 text-sm">
           <Link href="/dashboard" className="font-medium hover:underline" style={{ color: BRAND.colors.primary }}>

@@ -57,7 +57,7 @@ export function ProjectOverview({
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr,280px]">
-      {/* Left: Project card then floorplans by level */}
+      {/* Left: Project card then source files by level */}
       <div className="space-y-4 min-w-0">
         {/* Project summary card – same layout as dashboard project cards */}
         <section className="flex flex-wrap items-start gap-3 rounded-lg border p-3">
@@ -87,11 +87,11 @@ export function ProjectOverview({
             <Link href={`${basePath}/documents`} className="text-sm text-primary hover:underline">
               Documents
             </Link>
-            <Link href={`${basePath}/quantities`} className="text-sm text-primary hover:underline">
-              Quantities
+            <Link href={`${basePath}/models`} className="text-sm text-primary hover:underline">
+              Models
             </Link>
-            <Link href={`${basePath}/analyse`} className="text-sm text-primary hover:underline">
-              Analyse
+            <Link href={`${basePath}/modeling`} className="text-sm text-primary hover:underline">
+              Modeling
             </Link>
             <Link href={`${basePath}/chat`} className="text-sm text-primary hover:underline">
               Chat
@@ -105,7 +105,7 @@ export function ProjectOverview({
           return (
             <section key={level} className="rounded-xl border bg-card overflow-hidden">
               <div className="px-4 py-2 border-b bg-muted/30 text-sm font-medium">
-                Level {level} floorplan
+                Level {level} source file
               </div>
               <div className="aspect-[4/3] bg-muted/50 flex items-center justify-center">
                 {imageFile && project?.id ? (
@@ -117,17 +117,17 @@ export function ProjectOverview({
                 ) : firstFile ? (
                   <div className="text-center p-6">
                     <p className="text-sm font-medium text-foreground truncate max-w-xs mx-auto">{firstFile.fileName}</p>
-                    <p className="text-xs text-muted-foreground mt-1">Preview for PDF in Documents</p>
+                    <p className="text-xs text-muted-foreground mt-1">Preview available in Documents</p>
                     <Link href={`${basePath}/documents`} className="text-sm text-primary hover:underline mt-2 inline-block">
                       Open Documents
                     </Link>
                   </div>
                 ) : (
                   <div className="text-center p-6 text-muted-foreground">
-                    <p className="text-sm font-medium">No floorplan yet</p>
+                    <p className="text-sm font-medium">No source file yet</p>
                     <p className="text-xs mt-1">Upload in Documents</p>
                     <Link href={`${basePath}/documents`} className="text-sm text-primary hover:underline mt-2 inline-block">
-                      Upload level {level}
+                      Upload source for level {level}
                     </Link>
                   </div>
                 )}
@@ -157,19 +157,19 @@ export function ProjectOverview({
           </li>
           <li>
             <Link
-              href={`${basePath}/quantities`}
+              href={`${basePath}/models`}
               className="flex items-center justify-between gap-3 rounded-xl border bg-card p-4 text-foreground hover:bg-muted/50 transition-colors"
             >
-              <span className="font-semibold">Quantities</span>
-              {loading ? <span className="text-muted-foreground text-sm">…</span> : <span className="text-muted-foreground text-sm tabular-nums">{quantitiesCount} plan{quantitiesCount !== 1 ? 's' : ''}</span>}
+              <span className="font-semibold">Models</span>
+              {loading ? <span className="text-muted-foreground text-sm">…</span> : <span className="text-muted-foreground text-sm tabular-nums">{quantitiesCount} model{quantitiesCount !== 1 ? 's' : ''}</span>}
             </Link>
           </li>
           <li>
             <Link
-              href={`${basePath}/analyse`}
+              href={`${basePath}/modeling`}
               className="flex items-center justify-between gap-3 rounded-xl border bg-card p-4 text-foreground hover:bg-muted/50 transition-colors"
             >
-              <span className="font-semibold">Analyse</span>
+              <span className="font-semibold">Modeling</span>
               {loading ? <span className="text-muted-foreground text-sm">…</span> : <span className="text-muted-foreground text-sm tabular-nums">{reportsCount} report{reportsCount !== 1 ? 's' : ''}</span>}
             </Link>
           </li>

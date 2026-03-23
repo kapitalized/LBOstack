@@ -99,7 +99,7 @@ export default function AdminRunLogsPage() {
               {logs.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="p-8 text-center text-muted-foreground">
-                    No run logs yet. Run analysis from Documents to generate reports.
+                    No run logs yet. Run a model from Documents to generate reports.
                   </td>
                 </tr>
               ) : (

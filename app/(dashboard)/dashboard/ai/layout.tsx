@@ -12,10 +12,10 @@ export default function AILayout({ children }: { children: React.ReactNode }) {
           Chat
         </Link>
         <Link
-          href="/dashboard/ai/analyse"
+          href="/dashboard/ai/modeling"
           className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50"
         >
-          Analyse
+          Modeling
         </Link>
         <Link
           href="/dashboard/ai/documents"
@@ -27,7 +27,7 @@ export default function AILayout({ children }: { children: React.ReactNode }) {
           href="/dashboard/ai/floorplan-test"
           className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50"
         >
-          Floorplan test
+          Extraction test
         </Link>
       </nav>
       <div className="flex-1 min-h-0">

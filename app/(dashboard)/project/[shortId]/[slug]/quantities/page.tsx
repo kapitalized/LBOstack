@@ -83,20 +83,20 @@ export default function ProjectQuantitiesPage() {
     <div className="space-y-4">
       <ProjectNav shortId={shortId} slug={slug} />
       <div>
-        <h1 className="text-2xl font-bold">Quantities</h1>
-        <p className="text-muted-foreground text-sm mt-1">Analysed output from floorplans and levels. Click a plan to view takeoff.</p>
+        <h1 className="text-2xl font-bold">Models</h1>
+        <p className="text-muted-foreground text-sm mt-1">Model outputs including cashflow statements, audit items, and waterfall-ready schedules.</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[280px,1fr]">
         <section className="border rounded-lg bg-card overflow-hidden">
           <div className="p-4 border-b">
-            <h2 className="font-semibold">Plans / levels</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Quantity takeoff reports</p>
+            <h2 className="font-semibold">Model runs</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">LBO and audit reports</p>
           </div>
           {loading ? (
             <div className="p-6 text-center text-sm text-muted-foreground">Loading…</div>
           ) : reports.length === 0 ? (
-            <div className="p-6 text-center text-sm text-muted-foreground">No quantity reports yet. Run analysis on a document from Documents.</div>
+            <div className="p-6 text-center text-sm text-muted-foreground">No model reports yet. Run an LBO model from Documents.</div>
           ) : (
             <ul className="divide-y max-h-[60vh] overflow-y-auto">
               {reports.map((r) => (
@@ -121,7 +121,7 @@ export default function ProjectQuantitiesPage() {
 
         <section className="border rounded-lg bg-card overflow-hidden min-h-[200px]">
           {!selectedReportId ? (
-            <div className="p-8 text-center text-muted-foreground text-sm">Select a plan or level from the list to view quantities.</div>
+            <div className="p-8 text-center text-muted-foreground text-sm">Select a model run from the list to view outputs.</div>
           ) : loadingDetail ? (
             <div className="p-8 text-center text-muted-foreground text-sm">Loading…</div>
           ) : reportDetail ? (
@@ -156,7 +156,7 @@ export default function ProjectQuantitiesPage() {
                   </table>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">No quantity items in this report.</p>
+                <p className="text-sm text-muted-foreground">No model items in this report.</p>
               )}
             </div>
           ) : (

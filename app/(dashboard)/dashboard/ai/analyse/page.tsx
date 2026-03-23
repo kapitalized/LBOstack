@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Analyse — select floorplan, run analysis (top card); below: Previous reports (left), Report viewer (right).
+ * Modeling — select model input, run analysis (top card); below: Previous reports (left), Report viewer (right).
  */
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -123,7 +123,7 @@ export default function AnalysePage() {
       const apiError = (data as { error?: string }).error;
 
       if (!res.ok) {
-        setAnalyseError(apiError ?? 'Analysis failed.');
+        setAnalyseError(apiError ?? 'Model run failed.');
         return;
       }
       if (apiError) {
@@ -132,11 +132,11 @@ export default function AnalysePage() {
       }
       const reportId = (data as { reportId?: string }).reportId ?? (data as { persisted?: { reportId?: string } }).persisted?.reportId;
       if (reportId) {
-        setAnalyseSuccess('Analysis complete. Report added below.');
+        setAnalyseSuccess('Model run complete. Report added below.');
         loadReports();
         setSelectedId(reportId);
       } else {
-        setAnalyseError('Analysis completed but no report was created.');
+        setAnalyseError('Model run completed but no report was created.');
       }
     } catch {
       setAnalyseError('Network or server error. Try again.');
@@ -147,14 +147,14 @@ export default function AnalysePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Analyse</h1>
+      <h1 className="text-2xl font-bold">Modeling</h1>
       <p className="text-muted-foreground text-sm mt-1">
-        Select a floorplan and run AI analysis. View previous reports and open any report in the viewer.
+        Select an input file, run LBO modeling or audit extraction, then review statements and waterfall outputs.
       </p>
 
-      {/* Top card: Select floorplan, click to analyse */}
+      {/* Top card: Select input file and run modeling */}
       <div className="rounded-lg border bg-card p-4">
-        <h2 className="font-semibold text-sm mb-3">Run analysis</h2>
+        <h2 className="font-semibold text-sm mb-3">Run model</h2>
         <div className="flex flex-wrap items-end gap-3">
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1">Project</label>
@@ -170,7 +170,7 @@ export default function AnalysePage() {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">Floorplan</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Input file</label>
             <select
               value={selectedFileId}
               onChange={(e) => setSelectedFileId(e.target.value)}
@@ -189,7 +189,7 @@ export default function AnalysePage() {
             disabled={!projectId || !selectedFileId || analyzing || loadingFiles}
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
-            {analyzing ? 'Analysing…' : 'Analyse'}
+            {analyzing ? 'Running…' : 'Run model'}
           </button>
         </div>
         {analyseError && (
@@ -207,7 +207,7 @@ export default function AnalysePage() {
           {loadingList ? (
             <p className="text-xs text-muted-foreground">Loading…</p>
           ) : reports.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No reports yet. Run analysis above.</p>
+            <p className="text-xs text-muted-foreground">No reports yet. Run modeling above.</p>
           ) : (
             <ul className="space-y-1">
               {reports.map((r) => {

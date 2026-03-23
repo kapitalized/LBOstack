@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * Analyse — list by project, select one, view in AIReportViewer.
- * When basePath is set (project-scoped URL), selection uses short URLs e.g. /project/x/y/analyse/ab12cd.
+ * Modeling — list by project, select one, view in AIReportViewer.
+ * When basePath is set (project-scoped URL), selection uses short URLs e.g. /project/x/y/modeling/ab12cd.
  */
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -110,9 +110,9 @@ export function AnalyseReportListContent({ initialProjectId, basePath, initialRe
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Analyse</h1>
+          <h1 className="text-2xl font-bold">Modeling</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Pipeline results. Run analysis from Documents or the Analyse page, then open here.
+            Model outputs and audit traces. Run from Documents or the Modeling page, then open results here.
           </p>
         </div>
       </div>

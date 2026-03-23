@@ -13,7 +13,7 @@ export default function ProjectAnalysePage() {
 
   if (!project) return <div className="p-6 text-muted-foreground">Loading…</div>;
 
-  const basePath = `/project/${shortId}/${slug}/analyse`;
+  const basePath = `/project/${shortId}/${slug}/modeling`;
   return (
     <div className="space-y-4">
       <ProjectNav shortId={shortId} slug={slug} />

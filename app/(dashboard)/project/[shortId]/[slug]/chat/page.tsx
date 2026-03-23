@@ -177,7 +177,7 @@ export default function ProjectChatPage() {
                 {!chatContext ? (
                   <p className="text-muted-foreground text-xs">Loading…</p>
                 ) : chatContext.recentReports.length === 0 ? (
-                  <p className="text-muted-foreground text-xs">None. Run analysis in Analyse.</p>
+                  <p className="text-muted-foreground text-xs">None. Run a model in Modeling.</p>
                 ) : (
                   <ul className="space-y-1 max-h-40 overflow-y-auto">
                     {chatContext.recentReports.map((r) => (

@@ -421,7 +421,7 @@ export default function AIReportViewer({ report, isLoading }: AIReportViewerProp
       {items.length > 0 && (
         <div className="border rounded-lg bg-muted/20 p-3 text-sm">
           <p className="text-muted-foreground font-medium mb-1">Data</p>
-          <p className="text-muted-foreground mb-2">Raw quantities are in a separate file. Download to open in Excel or other tools.</p>
+          <p className="text-muted-foreground mb-2">Raw model rows are in a separate file. Download to open in Excel or other tools.</p>
           <button
             type="button"
             onClick={() => downloadCSV(items, `report-${report?.id ?? 'export'}.csv`)}

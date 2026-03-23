@@ -172,7 +172,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="mt-2 text-muted-foreground">Manage projects and run AI analysis.</p>
+        <p className="mt-2 text-muted-foreground">Manage deals, run LBO models, and review audit outputs.</p>
       </div>
 
       {error && (
@@ -224,11 +224,11 @@ export default function DashboardPage() {
                       <Link href={projectSubPath(p, 'documents')} className="text-sm text-primary hover:underline">
                         Documents
                       </Link>
-                      <Link href={projectSubPath(p, 'quantities')} className="text-sm text-primary hover:underline">
-                        Quantities
+                      <Link href={projectSubPath(p, 'models')} className="text-sm text-primary hover:underline">
+                        Models
                       </Link>
-                      <Link href={projectSubPath(p, 'analyse')} className="text-sm text-primary hover:underline">
-                        Analyse
+                      <Link href={projectSubPath(p, 'modeling')} className="text-sm text-primary hover:underline">
+                        Modeling
                       </Link>
                       <Link href={projectSubPath(p, 'chat')} className="text-sm text-primary hover:underline">
                         Chat

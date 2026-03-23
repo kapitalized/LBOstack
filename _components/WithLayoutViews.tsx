@@ -10,6 +10,9 @@ export {
   PagesSEOViewWithLayout,
   StripePlansViewWithLayout,
   BillingViewWithLayout,
+  BillingsViewWithLayout,
+  CouponsViewWithLayout,
   AIRunsViewWithLayout,
   EnvViewWithLayout,
+  ExternalApisViewWithLayout,
 } from '@/app/(payload)/admin/_components/WithLayoutViews';

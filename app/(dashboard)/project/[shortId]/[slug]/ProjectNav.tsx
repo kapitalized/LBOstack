@@ -29,11 +29,11 @@ export function ProjectNav({ shortId, slug }: { shortId: string; slug: string })
       <Link href={`${base}/documents`} className={`${baseLink} ${is('documents') ? activeLink : inactiveLink}`}>
         Documents
       </Link>
-      <Link href={`${base}/quantities`} className={`${baseLink} ${is('quantities') ? activeLink : inactiveLink}`}>
-        Quantities
+      <Link href={`${base}/models`} className={`${baseLink} ${is('models') ? activeLink : inactiveLink}`}>
+        Models
       </Link>
-      <Link href={`${base}/analyse`} className={`${baseLink} ${is('analyse') ? activeLink : inactiveLink}`}>
-        Analyse
+      <Link href={`${base}/modeling`} className={`${baseLink} ${is('modeling') ? activeLink : inactiveLink}`}>
+        Modeling
       </Link>
       <Link href={`${base}/chat`} className={`${baseLink} ${is('chat') ? activeLink : inactiveLink}`}>
         Chat

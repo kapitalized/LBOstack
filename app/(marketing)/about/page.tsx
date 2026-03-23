@@ -11,7 +11,7 @@ export default function AboutPage() {
     <div className="mx-auto max-w-3xl px-6 py-16">
       <h1 className="text-3xl font-bold tracking-tight">About {BRAND.name}</h1>
       <p className="mt-4 text-muted-foreground leading-relaxed">
-        We build precision AI tools for technical industries: construction takeoffs, financial analysis,
+        We build precision AI tools for technical finance workflows: LBO modeling, model auditing,
         and document intelligence. Every output is designed for human review and audit trails.
       </p>
       <p className="mt-4 text-muted-foreground leading-relaxed">
