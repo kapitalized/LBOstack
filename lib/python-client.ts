@@ -27,6 +27,13 @@ export async function callPythonEngine<T = unknown>(
   const parameters = payload.parameters ?? { thickness: 0.2 };
 
   if (!PYTHON_ENGINE_URL || PYTHON_ENGINE_URL.trim() === '') {
+    // In-app fallback only supports the CAD math stub (/calculate).
+    const normalized = endpoint.replace(/^\//, '').trim();
+    if (normalized !== 'calculate') {
+      throw new Error(
+        `Python Engine URL is not configured (PYTHON_ENGINE_URL missing), but endpoint '/${normalized}' requires it.`
+      );
+    }
     const result = runCalculate({ data, parameters });
     return result as unknown as PythonEngineResponse<T>;
   }

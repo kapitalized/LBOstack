@@ -75,7 +75,7 @@ export async function POST(
     return NextResponse.json({ error: 'Missing file in form field "file"' }, { status: 400 });
   }
   const fileType = (formData.get('fileType') as string) || 'plan';
-  const safeType = ['plan', 'defect_report', 'contract'].includes(fileType) ? fileType : 'plan';
+  const safeType = ['plan', 'defect_report', 'contract', 'lbo_model'].includes(fileType) ? fileType : 'plan';
   const buildingLevelRaw = formData.get('buildingLevel');
   const buildingLevel =
     buildingLevelRaw !== null && buildingLevelRaw !== undefined && buildingLevelRaw !== ''

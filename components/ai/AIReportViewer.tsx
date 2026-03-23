@@ -256,6 +256,21 @@ export default function AIReportViewer({ report, isLoading }: AIReportViewerProp
   const items: AuditItem[] = Array.isArray(payload)
     ? payload.filter(isAuditItem) as AuditItem[]
     : [];
+  const lboScheduleRows = Array.isArray(payload)
+    ? (payload.filter((x) => {
+        if (typeof x !== 'object' || x == null) return false;
+        const v = x as { type?: unknown; periodIndex?: unknown };
+        return v.type === 'scheduleRow' && typeof v.periodIndex === 'number';
+      }) as Array<{
+        type: 'scheduleRow';
+        periodIndex: number;
+        operatingCashFlow?: number;
+        interestPaidTotal?: number;
+        principalPaidTotal?: number;
+        debtRemainingTotal?: number;
+        equityDistribution?: number;
+      }>)
+    : [];
 
   const run = report?.runMetadata;
   const runAt = run?.runStartedAt ? new Date(run.runStartedAt) : null;
@@ -330,6 +345,39 @@ export default function AIReportViewer({ report, isLoading }: AIReportViewerProp
           <ReactMarkdown>{content}</ReactMarkdown>
         </div>
       ) : null}
+
+      {/* LBO: cash sweep schedule table (structured data from /api/lbo/run) */}
+      {report?.reportType === 'lbo_model' && lboScheduleRows.length > 0 && (
+        <div className="border rounded-lg bg-muted/20 p-3 text-sm">
+          <p className="text-muted-foreground font-medium mb-2">Cash Sweep Schedule</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b">
+                  <th className="py-1.5 pr-3 font-medium">Period</th>
+                  <th className="py-1.5 pr-3 font-medium">OCF</th>
+                  <th className="py-1.5 pr-3 font-medium">Interest Paid</th>
+                  <th className="py-1.5 pr-3 font-medium">Principal Paid</th>
+                  <th className="py-1.5 pr-3 font-medium">Debt Remaining</th>
+                  <th className="py-1.5 pr-3 font-medium">Equity Dist</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lboScheduleRows.map((r, idx) => (
+                  <tr key={idx} className="border-b border-border/50 last:border-0">
+                    <td className="py-1.5 pr-3">{r.periodIndex + 1}</td>
+                    <td className="py-1.5 pr-3">{r.operatingCashFlow != null && Number.isFinite(r.operatingCashFlow) ? r.operatingCashFlow.toFixed(2) : '—'}</td>
+                    <td className="py-1.5 pr-3">{r.interestPaidTotal != null && Number.isFinite(r.interestPaidTotal) ? r.interestPaidTotal.toFixed(2) : '—'}</td>
+                    <td className="py-1.5 pr-3">{r.principalPaidTotal != null && Number.isFinite(r.principalPaidTotal) ? r.principalPaidTotal.toFixed(2) : '—'}</td>
+                    <td className="py-1.5 pr-3">{r.debtRemainingTotal != null && Number.isFinite(r.debtRemainingTotal) ? r.debtRemainingTotal.toFixed(2) : '—'}</td>
+                    <td className="py-1.5 pr-3">{r.equityDistribution != null && Number.isFinite(r.equityDistribution) ? r.equityDistribution.toFixed(2) : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Total area at bottom when we have area items */}
       {totalArea != null && (

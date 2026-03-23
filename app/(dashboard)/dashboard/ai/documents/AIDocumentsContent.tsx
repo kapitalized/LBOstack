@@ -38,6 +38,7 @@ export function AIDocumentsContent({ initialProjectId, baseReportsPath }: AIDocu
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadingLevel, setUploadingLevel] = useState<number | null>(null);
+  const [uploadingExcel, setUploadingExcel] = useState(false);
   const [projectDetail, setProjectDetail] = useState<{ numberOfLevels: number } | null>(null);
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -108,6 +109,28 @@ export function AIDocumentsContent({ initialProjectId, baseReportsPath }: AIDocu
     }
   }
 
+  async function uploadExcelFile(file: File) {
+    if (!projectId || uploadingExcel) return;
+    setError(null);
+    setUploadingExcel(true);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      form.append('fileType', 'lbo_model');
+      const res = await fetch(`/api/projects/${projectId}/files`, { method: 'POST', body: form });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError((data as { error?: string }).error ?? 'Upload failed.');
+        return;
+      }
+      loadFiles();
+    } catch {
+      setError('Upload failed.');
+    } finally {
+      setUploadingExcel(false);
+    }
+  }
+
   function onInputChange(level: number, e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) uploadFile(file, level);
@@ -140,36 +163,72 @@ export function AIDocumentsContent({ initialProjectId, baseReportsPath }: AIDocu
     setSuccessMessage(null);
     setAnalyzingId(file.id);
     try {
-      const res = await fetch('/api/ai/run', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId,
-          fileId: file.id,
-          fileUrl: file.blobUrl,
-          sourceContent: `File: ${file.fileName}`,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      const apiError = (data as { error?: string }).error;
+      if (file.fileType === 'lbo_model') {
+        const res = await fetch('/api/lbo/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectId,
+            fileId: file.id,
+            fileUrl: file.blobUrl,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        const apiError = (data as { error?: string }).error;
 
-      if (!res.ok) {
-        const msg = apiError ?? (res.status >= 500 ? 'Server or AI provider error. OpenRouter may be temporarily unavailable — try again later.' : 'Analysis failed.');
-        setError(msg);
-        return;
+        if (!res.ok) {
+          const msg = apiError ?? (res.status >= 500 ? 'LBO run failed on the server.' : 'LBO run failed.');
+          setError(msg);
+          return;
+        }
+        if (apiError) {
+          setError(apiError);
+          return;
+        }
+
+        const reportId = (data as { reportId?: string }).reportId;
+        const reportShortId = (data as { reportShortId?: string | null }).reportShortId ?? null;
+        if (reportId) setSuccessMessage({ reportId, reportShortId, modelName: 'LBO Model Engine' });
+        else setError('LBO run completed but no report was created. Try again.');
+        loadFiles();
+      } else {
+        const res = await fetch('/api/ai/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectId,
+            fileId: file.id,
+            fileUrl: file.blobUrl,
+            sourceContent: `File: ${file.fileName}`,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        const apiError = (data as { error?: string }).error;
+
+        if (!res.ok) {
+          const msg =
+            apiError ??
+            (res.status >= 500
+              ? 'Server or AI provider error. OpenRouter may be temporarily unavailable — try again later.'
+              : 'Analysis failed.');
+          setError(msg);
+          return;
+        }
+        if (apiError) {
+          setError(apiError);
+          return;
+        }
+        const reportId =
+          (data as { reportId?: string }).reportId ??
+          (data as { persisted?: { reportId?: string } }).persisted?.reportId;
+        const reportShortId = (data as { reportShortId?: string | null }).reportShortId ?? null;
+        const modelName = (data as { modelName?: string }).modelName ?? 'AI model';
+        if (reportId) setSuccessMessage({ reportId, reportShortId, modelName });
+        else setError('Analysis completed but no report was created. Try again.');
+        loadFiles();
       }
-      if (apiError) {
-        setError(apiError);
-        return;
-      }
-      const reportId = (data as { reportId?: string }).reportId ?? (data as { persisted?: { reportId?: string } }).persisted?.reportId;
-      const reportShortId = (data as { reportShortId?: string | null }).reportShortId ?? null;
-      const modelName = (data as { modelName?: string }).modelName ?? 'AI model';
-      if (reportId) setSuccessMessage({ reportId, reportShortId, modelName });
-      else setError('Analysis completed but no report was created. Try again.');
-      loadFiles();
     } catch {
-      setError('Network error or no response. The AI provider (OpenRouter) may be unavailable. Check your connection and try again.');
+      setError('Network error or no response. The AI provider or Python engine may be temporarily unavailable. Check your connection and try again.');
     } finally {
       setAnalyzingId(null);
     }
@@ -287,7 +346,7 @@ export function AIDocumentsContent({ initialProjectId, baseReportsPath }: AIDocu
                             disabled={analyzingId !== null}
                             className="text-sm px-3 py-1.5 rounded-md border bg-primary text-primary-foreground disabled:opacity-50"
                           >
-                            {analyzingId === f.id ? 'Running…' : 'Run analysis'}
+                            {analyzingId === f.id ? 'Running…' : f.fileType === 'lbo_model' ? 'Run LBO model' : 'Run analysis'}
                           </button>
                         </td>
                       </tr>
@@ -330,6 +389,31 @@ export function AIDocumentsContent({ initialProjectId, baseReportsPath }: AIDocu
                 </div>
               </div>
             ))}
+
+            <div className="border rounded-lg bg-card overflow-hidden p-4">
+              <h2 className="font-semibold text-lg mb-1">Upload LBO Excel</h2>
+              <p className="text-sm text-muted-foreground">.xlsx model inputs for cashflows and cash sweeps.</p>
+              <label className="cursor-pointer block mt-3">
+                <span
+                  className={`text-sm font-medium block rounded-md border px-3 py-2 text-center ${
+                    uploadingExcel ? 'text-muted-foreground' : 'bg-background hover:bg-muted/40'
+                  }`}
+                >
+                  {uploadingExcel ? 'Uploading…' : 'Choose .xlsx file'}
+                </span>
+                <input
+                  type="file"
+                  className="hidden"
+                  disabled={uploadingExcel}
+                  accept=".xlsx"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) uploadExcelFile(file);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+            </div>
           </div>
         </div>
       )}

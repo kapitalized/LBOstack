@@ -1,0 +1,17 @@
+LBOStack: The "Excel-Augmented" LBO Tech Suite
+
+1. App PurposeLBOStack is a specialized financial technology suite designed to move high-stakes Leveraged Buyout (LBO) modeling from static, error-prone Excel spreadsheets into a dynamic, web-based control center. It doesn't replace Excel; it "wraps" it with an ingestion engine, a real-time visualizer, a cloud-based calculation core, and an automated audit layer.
+
+2. User PersonasThe Associate/Analyst: Uses the tool to automate PDF data ingestion, audit complex waterfalls, and generate "IC-ready" (Investment Committee) reporting packs.The Vice President (VP): Uses the "Audit Engine" to verify the integrity of models built by juniors before they reach the Managing Director.The MD/Partner: Uses the "Visualizer" and "Sensitivity Lab" during meetings to pull strategic "levers" (e.g., "What if we exit at 10x instead of 12x?") on a tablet or laptop.
+
+3. Tech StackFrontend: Next.js 14+ (App Router), Tailwind CSS, Shadcn/ui.Database: Neon (Serverless Postgres) with Drizzle ORM.Authentication: Neon Auth.Hosting: Vercel (Edge Functions for low-latency math).AI Service: OpenRouter (accessing Claude 3.5 Sonnet or GPT-4o for logical reasoning).Storage: Vercel Blob (Encrypted storage for uploaded .xlsx models).
+
+4. Stack Segments & Domain LogicSegmentTech RequirementPurposeIngestOpenRouter VisionScrapes PDF financials into structured JSON.Core EngineTypeScriptHigh-speed, deterministic LBO math (S&U, IRR, MOIC).VisualizerRecharts / Chart.jsRenders Debt Paydown "Stairs" and Cash Flow Waterfalls.Audit EnginePython (FastAPI/Pyodide)Parses Excel XML to map AST cell dependencies.SensitivityVercel Edge FunctionsParallelized computation for 3D heat maps.
+
+5. Calculation & Analysis LogicTo avoid the "Black Box" liability, LBOStack uses a tri-tier strategy:The Deterministic Engine (TypeScript): The "Source of Truth." Handles the core LBO math using iterative loops to resolve circular references (Interest <-> Debt Balance).The Audit Engine (Python): When a user uploads a .xlsx file to Vercel Blob, this engine parses the XML structure. It creates an Abstract Syntax Tree (AST) of cell dependencies.The AI Layer (OpenRouter): Acts as the "Logical Auditor." It does not do the math; it analyzes the AST provided by the Python engine to find qualitative errors (e.g., "The model is using Net Income instead of EBITDA for the leverage covenant check").
+
+6. Financial Visuals & LibrariesRecharts: For the "Waterfall" chart (using BarCharts with transparent bases to show cash flow "bridges").TanStack Table: For high-performance, Excel-like data grids with pinned columns.Zod: To enforce strict "Deal Schemas" and validate financial inputs.Framer Motion: For smooth transitions when "Levers" are toggled in the Lab.
+
+7. Strategic FeaturesNeon Branching: Used for "Deal Snapshots." When an LOI is signed, the DB is branched to create an immutable, frozen "Time Machine" version of the deal.Universal Clipboard: Office.js integration to allow "Live-Linking" between the LBOStack web dashboard and local Excel cells.
+
+8. Key Files to Scaffold/lib/engine/lbo-core.ts: The main class for debt tranches and IRR logic./app/api/audit/route.ts: Endpoint for Python-based Excel XML parsing./components/visuals/waterfall-chart.tsx: Custom Recharts implementation for the CF bridge.

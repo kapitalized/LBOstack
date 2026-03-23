@@ -167,3 +167,75 @@ export async function persistAnalyzeResult(params: PersistAnalyzeParams): Promis
   if (!report?.id) throw new Error('Failed to insert report');
   return { analysisId, reportId: report.id };
 }
+
+export interface PersistLboModelParams {
+  projectId: string;
+  fileId?: string | null;
+  /**
+   * Markdown content shown in the report viewer.
+   * Stored in `report_generated.content`.
+   */
+  contentMarkdown: string;
+  reportTitle: string;
+  /**
+   * Structured payload stored in `ai_analyses.analysisResult`.
+   * `data_payload` returned by `/api/reports/[reportId]` is derived from this.
+   */
+  analysisItems: unknown[];
+  runStartedAt?: Date;
+}
+
+/**
+ * Persist MVP LBO run:
+ * - `ai_analyses.analysisType = 'lbo_cashflows'`
+ * - `report_generated.reportType = 'lbo_model'`
+ */
+export async function persistLboModelResult(params: PersistLboModelParams): Promise<{
+  analysisId: string;
+  reportId: string;
+  reportShortId: string | null;
+}> {
+  const { projectId, fileId, contentMarkdown, reportTitle, analysisItems, runStartedAt } = params;
+
+  const [analysis] = await db
+    .insert(ai_analyses)
+    .values({
+      projectId,
+      analysisType: 'lbo_cashflows',
+      analysisResult: { items: analysisItems } as unknown as Record<string, unknown>,
+      inputSourceIds: fileId ? [fileId] : [],
+      rawExtraction: {},
+      runStartedAt: runStartedAt ?? null,
+    })
+    .returning({ id: ai_analyses.id });
+
+  if (!analysis?.id) throw new Error('Failed to insert LBO analysis');
+  const analysisId = analysis.id;
+
+  let reportShortId: string | null = null;
+  let report: { id: string; shortId?: string | null } | undefined;
+
+  reportShortId = generateShortId();
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const existing = await db.select({ id: report_generated.id }).from(report_generated).where(eq(report_generated.shortId, reportShortId)).limit(1);
+    if (existing.length === 0) break;
+    reportShortId = generateShortId();
+  }
+
+  const [row] = await db
+    .insert(report_generated)
+    .values({
+      projectId,
+      shortId: reportShortId,
+      reportTitle,
+      reportType: 'lbo_model',
+      content: contentMarkdown,
+      analysisSourceId: analysisId,
+    })
+    .returning({ id: report_generated.id, shortId: report_generated.shortId });
+
+  report = row ? { id: row.id, shortId: row.shortId } : undefined;
+  if (!report?.id) throw new Error('Failed to insert LBO report');
+
+  return { analysisId, reportId: report.id, reportShortId: report.shortId ?? reportShortId };
+}
