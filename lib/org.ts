@@ -5,12 +5,14 @@
 
 import { db } from '@/lib/db';
 import { org_organisations, org_members, user_profiles, project_main } from '@/lib/db/schema';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
+import { ensureUserProfileById } from '@/lib/auth/session';
 
 export type OrgMemberRole = 'owner' | 'admin' | 'analyst';
 
 /** Ensure user has a personal org and is owner; set user_profiles.default_org_id if not set. Returns org id. */
 export async function ensurePersonalOrg(userId: string): Promise<string> {
+  await ensureUserProfileById(userId);
   const [existing] = await db
     .select({ orgId: org_members.orgId })
     .from(org_members)

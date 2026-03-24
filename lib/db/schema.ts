@@ -92,7 +92,7 @@ export const project_main = pgTable('project_main', {
   country: text('country'),
   /** Legacy construction field; can be repurposed for sector/type during LBO migration. */
   siteType: text('site_type'),
-  projectStatus: text('project_status'), // e.g. Design, Pre-construction, In construction, Completed
+  projectStatus: text('project_status'), // e.g. Active, Pause, Archive
   shortId: text('short_id'), // unique 6-char for URLs e.g. /project/abc123/my-building
   slug: text('slug'), // URL slug from name e.g. my-building
   /** Number of building levels (floors); used for floorplan upload slots and overview. */

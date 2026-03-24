@@ -89,7 +89,7 @@ export async function persistPipelineResult(params: PersistPipelineParams): Prom
     content: synthesis?.content_md ?? null,
     analysisSourceId: analysisId,
   };
-  const report: { id: string; shortId?: string | null } | undefined = row ? { id: row.id, shortId: row.shortId } : undefined;
+  let report: { id: string; shortId?: string | null } | undefined;
   let reportShortId: string | null = null;
   try {
     reportShortId = generateShortId();

@@ -48,9 +48,14 @@ export async function getSessionForApi(): Promise<ApiSession | null> {
 
 /** Ensure user_profiles row exists (for FK from project_main). Call after getSessionForApi when creating projects. */
 export async function ensureUserProfile(session: ApiSession): Promise<void> {
-  const email = session.user.email ?? `user-${session.userId}@placeholder.local`;
+  await ensureUserProfileById(session.userId, session.user.email);
+}
+
+/** Ensure user_profiles row exists (e.g. before org_members FK). Safe to call repeatedly. */
+export async function ensureUserProfileById(userId: string, email?: string | null): Promise<void> {
+  const emailVal = email ?? `user-${userId.slice(0, 8)}@placeholder.local`;
   await db
     .insert(user_profiles)
-    .values({ id: session.userId, email })
+    .values({ id: userId, email: emailVal })
     .onConflictDoNothing({ target: user_profiles.id });
 }

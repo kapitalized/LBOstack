@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm';
 import { slugify } from '@/lib/project-url';
 import { canAccessProject } from '@/lib/org';
 import { formatAddress } from '@/lib/address';
+import { sanitizeProjectStatus } from '@/lib/project-form-options';
 import { ProjectProvider } from './ProjectProvider';
 import { ProjectDocumentTitle } from './ProjectDocumentTitle';
 
@@ -67,7 +68,14 @@ export default async function ProjectLayout({ params, children }: Props) {
     country: row.addressCountry ?? '',
   };
   const projectAddress = (formatAddress(address) || row.projectAddress) ?? null;
-  const project = { ...row, numberOfLevels, address, projectAddress, country: row.addressCountry ?? row.country };
+  const project = {
+    ...row,
+    numberOfLevels,
+    address,
+    projectAddress,
+    country: row.addressCountry ?? row.country,
+    projectStatus: sanitizeProjectStatus(row.projectStatus),
+  };
 
   return (
     <ProjectProvider project={project}>

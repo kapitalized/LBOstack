@@ -9,6 +9,7 @@ import { eq } from 'drizzle-orm';
 import { slugify } from '@/lib/project-url';
 import { canAccessProject } from '@/lib/org';
 import { formatAddress, type Address } from '@/lib/address';
+import { sanitizeProjectStatus } from '@/lib/project-form-options';
 
 export async function GET(
   _req: Request,
@@ -71,6 +72,7 @@ export async function GET(
     projectAddress,
     address,
     country: row.addressCountry ?? row.country,
+    projectStatus: sanitizeProjectStatus(row.projectStatus),
   });
 }
 
@@ -110,18 +112,23 @@ export async function PATCH(
   if (typeof body.projectDescription === 'string') updates.projectDescription = body.projectDescription.trim().slice(0, 500) || null;
   if (typeof body.projectObjectives === 'string') updates.projectObjectives = body.projectObjectives.trim().slice(0, 2000) || null;
   if (typeof body.country === 'string') updates.country = body.country.trim() || null;
-  if (typeof body.projectStatus === 'string') updates.projectStatus = body.projectStatus.trim() || null;
+  if ('projectStatus' in body) {
+    updates.projectStatus =
+      typeof body.projectStatus === 'string' ? sanitizeProjectStatus(body.projectStatus) : null;
+  }
   if (typeof body.numberOfLevels === 'number' && body.numberOfLevels >= 1 && body.numberOfLevels <= 20) {
     updates.numberOfLevels = body.numberOfLevels;
   }
   if (Object.keys(updates).length === 0) {
     const [project] = await db.select().from(project_main).where(eq(project_main.id, projectId));
-    return NextResponse.json(project ?? {});
+    if (!project) return NextResponse.json({});
+    return NextResponse.json({ ...project, projectStatus: sanitizeProjectStatus(project.projectStatus) });
   }
   const [updated] = await db
     .update(project_main)
     .set({ ...updates, updatedAt: new Date() } as Record<string, unknown>)
     .where(eq(project_main.id, projectId))
     .returning();
-  return NextResponse.json(updated ?? {});
+  if (!updated) return NextResponse.json({});
+  return NextResponse.json({ ...updated, projectStatus: sanitizeProjectStatus(updated.projectStatus) });
 }

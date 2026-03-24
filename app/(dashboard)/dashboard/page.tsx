@@ -8,15 +8,11 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { projectPath, projectSubPath } from '@/lib/project-url';
 import { PROJECT_STATUS_OPTIONS } from '@/lib/project-form-options';
-import type { Address } from '@/lib/address';
-import { EMPTY_ADDRESS, parseAddress } from '@/lib/address';
-import { AddressForm } from '@/components/AddressForm';
 
 interface Project {
   id: string;
   projectName: string;
   projectAddress?: string | null;
-  address?: Address;
   projectDescription?: string | null;
   projectObjectives?: string | null;
   country?: string | null;
@@ -25,7 +21,6 @@ interface Project {
   createdAt?: string | null;
   shortId?: string | null;
   slug?: string | null;
-  numberOfLevels?: number | null;
 }
 
 export default function DashboardPage() {
@@ -34,17 +29,13 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
-  const [newAddress, setNewAddress] = useState<Address>({ ...EMPTY_ADDRESS });
   const [newDescription, setNewDescription] = useState('');
   const [newProjectStatus, setNewProjectStatus] = useState('');
-  const [newNumberOfLevels, setNewNumberOfLevels] = useState(1);
   const [creating, setCreating] = useState(false);
   const [editProjectId, setEditProjectId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
-  const [editAddress, setEditAddress] = useState<Address>({ ...EMPTY_ADDRESS });
   const [editDescription, setEditDescription] = useState('');
   const [editProjectStatus, setEditProjectStatus] = useState('');
-  const [editNumberOfLevels, setEditNumberOfLevels] = useState(1);
   const [savingEdit, setSavingEdit] = useState(false);
 
   async function load() {
@@ -57,7 +48,16 @@ export default function DashboardPage() {
           router.replace('/login?next=/dashboard&reason=session');
           return;
         }
-        setError('Failed to load projects.');
+        let message = 'Failed to load projects.';
+        try {
+          const errBody = (await res.json()) as { error?: string };
+          if (typeof errBody?.error === 'string' && errBody.error.trim()) {
+            message = errBody.error.trim();
+          }
+        } catch {
+          /* ignore */
+        }
+        setError(message);
         return;
       }
       const data = await res.json();
@@ -82,10 +82,8 @@ export default function DashboardPage() {
         if (!cancelled && res.ok) {
           const p = await res.json();
           setEditName(p.projectName ?? '');
-          setEditAddress(p.address ? { ...p.address } : parseAddress(p.projectAddress ?? ''));
           setEditDescription(p.projectDescription ?? '');
           setEditProjectStatus(p.projectStatus ?? '');
-          setEditNumberOfLevels(p.numberOfLevels ?? 1);
         }
       } catch {
         if (!cancelled) setEditProjectId(null);
@@ -96,10 +94,8 @@ export default function DashboardPage() {
   async function loadEditForm(project: Project) {
     setEditProjectId(project.id);
     setEditName(project.projectName ?? '');
-    setEditAddress(project.address ? { ...project.address } : parseAddress(project.projectAddress ?? ''));
     setEditDescription(project.projectDescription ?? '');
     setEditProjectStatus(project.projectStatus ?? '');
-    setEditNumberOfLevels(project.numberOfLevels ?? 1);
   }
   async function saveEdit() {
     if (!editProjectId || savingEdit) return;
@@ -112,10 +108,8 @@ export default function DashboardPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           projectName: editName.trim() || undefined,
-          address: editAddress,
           projectDescription: editDescription.trim().slice(0, 500) || undefined,
           projectStatus: editProjectStatus.trim() || undefined,
-          numberOfLevels: editNumberOfLevels,
         }),
       });
       if (!res.ok) {
@@ -144,10 +138,8 @@ export default function DashboardPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           projectName: newName.trim(),
-          address: newAddress,
           projectDescription: newDescription.trim().slice(0, 500) || undefined,
           projectStatus: newProjectStatus.trim() || undefined,
-          numberOfLevels: newNumberOfLevels,
         }),
       });
       if (!res.ok) {
@@ -156,10 +148,8 @@ export default function DashboardPage() {
         return;
       }
       setNewName('');
-      setNewAddress({ ...EMPTY_ADDRESS });
       setNewDescription('');
       setNewProjectStatus('');
-      setNewNumberOfLevels(1);
       await load();
     } catch {
       setError('Failed to create project.');
@@ -201,10 +191,9 @@ export default function DashboardPage() {
                           {p.projectName}
                         </Link>
                       </p>
-                      {p.projectAddress && <p className="text-xs text-muted-foreground truncate">{p.projectAddress}</p>}
-                      {([p.country, p.projectStatus, (p.numberOfLevels != null && p.numberOfLevels >= 1) ? `${p.numberOfLevels} level${p.numberOfLevels !== 1 ? 's' : ''}` : null].filter(Boolean).length > 0) && (
+                      {([p.country, p.projectStatus].filter(Boolean).length > 0) && (
                         <p className="text-xs text-muted-foreground truncate mt-0.5">
-                          {[p.country, p.projectStatus, (p.numberOfLevels != null && p.numberOfLevels >= 1) ? `${p.numberOfLevels} level${p.numberOfLevels !== 1 ? 's' : ''}` : null].filter(Boolean).join(' · ')}
+                          {[p.country, p.projectStatus].filter(Boolean).join(' · ')}
                         </p>
                       )}
                       {p.projectDescription && <p className="text-xs text-muted-foreground truncate mt-0.5">{p.projectDescription}</p>}
@@ -255,10 +244,6 @@ export default function DashboardPage() {
                 className="rounded-md border border-input bg-background px-3 py-2 w-full text-foreground placeholder:text-muted-foreground"
               />
             </label>
-            <div className="flex flex-col gap-1">
-              <span className="text-sm text-muted-foreground">Address (optional)</span>
-              <AddressForm value={newAddress} onChange={setNewAddress} labelPrefix="Project" compact />
-            </div>
             <label className="flex flex-col gap-1">
               <span className="text-sm text-muted-foreground">Description (optional)</span>
               <input
@@ -269,18 +254,6 @@ export default function DashboardPage() {
                 maxLength={500}
                 className="rounded-md border border-input bg-background px-3 py-2 w-full text-foreground placeholder:text-muted-foreground"
               />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-sm text-muted-foreground">Number of levels</span>
-              <select
-                value={newNumberOfLevels}
-                onChange={(e) => setNewNumberOfLevels(Number(e.target.value))}
-                className="rounded-md border border-input bg-background px-3 py-2 w-full text-foreground"
-              >
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                  <option key={n} value={n}>{n} level{n !== 1 ? 's' : ''}</option>
-                ))}
-              </select>
             </label>
             <label className="flex flex-col gap-1">
               <span className="text-sm text-muted-foreground">Status of project</span>
@@ -319,10 +292,6 @@ export default function DashboardPage() {
                   className="rounded-md border border-input bg-background px-3 py-2 text-foreground"
                 />
               </label>
-              <div className="flex flex-col gap-1">
-                <span className="text-sm text-muted-foreground">Address</span>
-                <AddressForm value={editAddress} onChange={setEditAddress} labelPrefix="Project" compact />
-              </div>
               <label className="flex flex-col gap-1">
                 <span className="text-sm text-muted-foreground">Description</span>
                 <input
@@ -332,18 +301,6 @@ export default function DashboardPage() {
                   maxLength={500}
                   className="rounded-md border border-input bg-background px-3 py-2 text-foreground w-full"
                 />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-sm text-muted-foreground">Number of levels</span>
-                <select
-                  value={editNumberOfLevels}
-                  onChange={(e) => setEditNumberOfLevels(Number(e.target.value))}
-                  className="rounded-md border border-input bg-background px-3 py-2 text-foreground w-full"
-                >
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                    <option key={n} value={n}>{n} level{n !== 1 ? 's' : ''}</option>
-                  ))}
-                </select>
               </label>
               <label className="flex flex-col gap-1">
                 <span className="text-sm text-muted-foreground">Status of project</span>

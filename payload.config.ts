@@ -4,14 +4,17 @@ import { buildConfig } from 'payload';
 import { postgresAdapter } from '@payloadcms/db-postgres';
 import sharp from 'sharp';
 
-import { Users } from './collections/Users';
-import { Pages } from './collections/Pages';
-import { ExternalIntegrations } from './collections/ExternalIntegrations';
-import { ApiSources } from './collections/ApiSources';
-import { ExternalApiRuns } from './collections/ExternalApiRuns';
-import { SiteSettings } from './globals/SiteSettings';
+import { Users } from './collections/Users.ts';
+import { Pages } from './collections/Pages.ts';
+import { ExternalIntegrations } from './collections/ExternalIntegrations.ts';
+import { ApiSources } from './collections/ApiSources.ts';
+import { ExternalApiRuns } from './collections/ExternalApiRuns.ts';
+import { SiteSettings } from './globals/SiteSettings.ts';
 
 const databaseUrl = process.env.DATABASE_URL || process.env.DATABASE_URI;
+
+/** Absolute path so Payload always finds migrations (avoids wrong cwd / src/migrations fallback). */
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 export default buildConfig({
   admin: {
@@ -141,6 +144,8 @@ export default buildConfig({
       connectionString: databaseUrl || 'postgresql://localhost:5432/payload',
     },
     push: false, // use migrations so admin works without interactive Drizzle prompt
+    /** Payload migrations only (admin/CMS tables). App schema uses Drizzle migrations separately. */
+    migrationDir: path.resolve(projectRoot, 'payload-migrations'),
   }),
   sharp,
 });

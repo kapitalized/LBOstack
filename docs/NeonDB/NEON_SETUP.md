@@ -4,6 +4,27 @@ Use the same Neon project for production (Vercel) and development (localhost). T
 
 ---
 
+## Quick fix: `relation "project_main" does not exist` / `relation "user_profiles" does not exist`
+
+The app tables were never created in Postgres. **Migrations must run with `DATABASE_URL` set.** Plain `npx drizzle-kit migrate` does **not** load `.env.local`, so it often skips applying migrations.
+
+1. Put your Neon URL in **`.env.local`** as `DATABASE_URL=...`
+2. From the **repo root** run:
+   ```bash
+   npm run migrate:all
+   ```
+   That runs **Payload** then **Drizzle** migrations using env from `.env.local`.
+
+3. For **production** Neon, run the same command once with production URL in `.env.local` (or set `DATABASE_URL` in the shell — do not commit secrets).
+
+| Script | What it runs |
+|--------|----------------|
+| `npm run migrate:all` | `payload migrate` + `drizzle-kit migrate` |
+| `npm run migrate:payload` | Payload only (`users`, CMS tables) |
+| `npm run migrate:drizzle` | Drizzle only (`user_profiles`, `project_main`, org tables, …) |
+
+---
+
 ## 1. Neon project and connection string
 
 1. Go to [neon.tech](https://neon.tech) and sign in (you already have an account).
@@ -59,7 +80,34 @@ Use the same Neon project for production (Vercel) and development (localhost). T
 
 ---
 
-## 5. Optional: sync schema (Drizzle)
+## 5. Payload CMS admin (`/admin`) — required migrations
+
+Payload stores **admin users** in Postgres tables `users` and `users_sessions` (not Neon Auth). The app sets `push: false` in `payload.config.ts`, so **you must apply Payload migrations** to the same database as `DATABASE_URL`.
+
+**Symptom:** Admin shows “Failed query” selecting from `users` / `users_sessions` — usually **`relation "users" does not exist`** or a missing column (e.g. `role`) if only part of the migrations ran.
+
+**Fix (local or CI), using your Neon URL:**
+
+1. Ensure `.env.local` has `DATABASE_URL` (and `PAYLOAD_SECRET` set for production-like runs).
+2. From the repo root run:
+   - `npm run migrate:payload`  
+   - or `npx payload migrate`
+3. Repeat for **production** by running the same command with **Vercel’s `DATABASE_URL`** (e.g. `DATABASE_URL="postgresql://..." npx payload migrate` in a trusted environment). Do **not** commit secrets.
+
+After migrations succeed, open `/admin` again and sign in (create the first admin user if prompted).
+
+### App tables (`project_main`, chat, reports, …)
+
+These live in `public` and are **not** created by Payload. They come from **Drizzle** (`lib/db/schema.ts`).
+
+1. Prefer **`npm run migrate:all`** (see [Quick fix](#quick-fix-relation-project_main-does-not-exist--relation-user_profiles-does-not-exist) above) so `DATABASE_URL` is loaded from `.env.local`.
+2. Do this for **each environment** (local Neon URL, then production) after `migrate:payload` or whenever you pull new migrations.
+
+If you skip this step, the dashboard can show **“Failed to load projects”** / API errors like **`relation "project_main" does not exist`**.
+
+---
+
+## 6. Optional: sync schema (Drizzle)
 
 If you use Drizzle and custom tables:
 
@@ -71,7 +119,7 @@ See `docs/SCHEMA_SETUP.md` for details.
 
 ---
 
-## 6. Session cookies and different URLs
+## 7. Session cookies and different URLs
 
 The app sets the session cookie for your host so login works. In development we use `domain: 'localhost'` so the same cookie works for `localhost:3000`, `localhost:3001`, etc. On **http://localhost** the auth route rewrites cookies (removes `Secure` and `__Secure-` prefix) so the browser will store and send them; otherwise you’d get a redirect loop (login → dashboard → logged out → login). In production (HTTPS), leave cookies as-is. Set `COOKIE_DOMAIN` (e.g. `.your-app.com`) only if you need cross-subdomain sessions; otherwise leave it unset.
 
@@ -100,3 +148,5 @@ This is normal browser behavior and not a bug in Neon Auth.
 - [ ] Neon Auth enabled; `NEON_AUTH_BASE_URL` and `NEON_AUTH_COOKIE_SECRET` set
 - [ ] Vercel: same three env vars added; redeploy done
 - [ ] Localhost: `.env.local` with same three vars; `npm run dev` works
+- [ ] `npm run migrate:all` run against Neon (local + production DB as needed) — `/admin` + `/dashboard` / Organisation
+- [ ] `PAYLOAD_SECRET` set in Vercel for Payload (generate a long random string)

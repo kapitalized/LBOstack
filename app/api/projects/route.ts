@@ -11,6 +11,7 @@ import { generateShortId, slugify } from '@/lib/project-url';
 import { getDefaultOrgId, getOrgIdsForUser } from '@/lib/org';
 import { checkProjectLimit } from '@/lib/plan-limits';
 import { formatAddress, type Address } from '@/lib/address';
+import { sanitizeProjectStatus } from '@/lib/project-form-options';
 
 export async function GET() {
   const session = await getSessionForApi();
@@ -199,7 +200,7 @@ export async function POST(req: Request) {
       projectDescription: typeof projectDescription === 'string' ? projectDescription.trim().slice(0, 500) || null : null,
       country: addr.country ?? (typeof country === 'string' ? country.trim() || null : null),
       siteType: typeof siteType === 'string' ? siteType.trim() || null : null,
-      projectStatus: typeof projectStatus === 'string' ? projectStatus.trim() || null : null,
+      projectStatus: sanitizeProjectStatus(typeof projectStatus === 'string' ? projectStatus : undefined),
       shortId,
       slug: slug || null,
       status: 'active',
@@ -230,7 +231,7 @@ export async function POST(req: Request) {
       projectObjectives: project.projectObjectives != null ? String(project.projectObjectives) : null,
       country: project.country != null ? String(project.country) : null,
       siteType: project.siteType != null ? String(project.siteType) : null,
-      projectStatus: project.projectStatus != null ? String(project.projectStatus) : null,
+      projectStatus: sanitizeProjectStatus(project.projectStatus != null ? String(project.projectStatus) : null),
       shortId: project.shortId != null ? String(project.shortId) : null,
       slug: project.slug != null ? String(project.slug) : null,
       status: project.status != null ? String(project.status) : 'active',

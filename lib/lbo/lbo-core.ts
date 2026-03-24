@@ -1,4 +1,4 @@
-import type { LboDealSchema, LboModelOutput, TrancheInput, LboScheduleOutput } from './types';
+import type { LboDealSchema, LboModelOutput, TrancheInput, LboScheduleOutput, LboScheduleRow } from './types';
 import type { LboMetrics } from './types';
 import { normalizeMinCashBalance } from './types';
 
