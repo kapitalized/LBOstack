@@ -35,6 +35,9 @@ export function ProjectNav({ shortId, slug }: { shortId: string; slug: string })
       <Link href={`${base}/modeling`} className={`${baseLink} ${is('modeling') ? activeLink : inactiveLink}`}>
         Modeling
       </Link>
+      <Link href={`${base}/structure`} className={`${baseLink} ${is('structure') ? activeLink : inactiveLink}`}>
+        Structure
+      </Link>
       <Link href={`${base}/chat`} className={`${baseLink} ${is('chat') ? activeLink : inactiveLink}`}>
         Chat
       </Link>

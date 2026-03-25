@@ -142,26 +142,44 @@ export function ProjectOverview({
         })}
       </div>
 
-      {/* Right: Action cards with counts */}
+      {/* Right: Action cards with direct workflow steps */}
       <div className="space-y-3">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Actions</h2>
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">LBO Workflow</h2>
         <ul className="space-y-3">
           <li>
             <Link
               href={`${basePath}/documents`}
-              className="flex items-center justify-between gap-3 rounded-xl border bg-card p-4 text-foreground hover:bg-muted/50 transition-colors"
+              className="block rounded-xl border bg-card p-4 text-foreground hover:bg-muted/50 transition-colors"
             >
-              <span className="font-semibold">Documents</span>
-              {loading ? <span className="text-muted-foreground text-sm">…</span> : <span className="text-muted-foreground text-sm tabular-nums">{docsCount} doc{docsCount !== 1 ? 's' : ''}</span>}
+              <p className="font-semibold">Upload Model for Audit</p>
+              <p className="text-xs text-muted-foreground mt-1">Upload `.xlsx` as `Models`, then run and review audit/model outputs.</p>
+              <p className="text-xs text-muted-foreground mt-2 tabular-nums">
+                {loading ? '…' : `${docsCount} file${docsCount !== 1 ? 's' : ''} uploaded`}
+              </p>
             </Link>
           </li>
           <li>
             <Link
-              href={`${basePath}/models`}
-              className="flex items-center justify-between gap-3 rounded-xl border bg-card p-4 text-foreground hover:bg-muted/50 transition-colors"
+              href={`${basePath}/documents`}
+              className="block rounded-xl border bg-card p-4 text-foreground hover:bg-muted/50 transition-colors"
             >
-              <span className="font-semibold">Models</span>
-              {loading ? <span className="text-muted-foreground text-sm">…</span> : <span className="text-muted-foreground text-sm tabular-nums">{quantitiesCount} model{quantitiesCount !== 1 ? 's' : ''}</span>}
+              <p className="font-semibold">Upload Excel with Inputs</p>
+              <p className="text-xs text-muted-foreground mt-1">Upload assumptions/supporting files as `Model_Inputs` for extraction and runs.</p>
+              <p className="text-xs text-muted-foreground mt-2 tabular-nums">
+                {loading ? '…' : `${quantitiesCount} model run${quantitiesCount !== 1 ? 's' : ''} available`}
+              </p>
+            </Link>
+          </li>
+          <li>
+            <Link
+              href={`${basePath}/structure`}
+              className="block rounded-xl border bg-card p-4 text-foreground hover:bg-muted/50 transition-colors"
+            >
+              <p className="font-semibold">Set Debt / Equity Structure</p>
+              <p className="text-xs text-muted-foreground mt-1">Open a visual setup page for capital stack assumptions and cash-sweep intent.</p>
+              <p className="text-xs text-muted-foreground mt-2 tabular-nums">
+                {loading ? '…' : `${reportsCount} report${reportsCount !== 1 ? 's' : ''} generated`}
+              </p>
             </Link>
           </li>
           <li>
@@ -169,17 +187,8 @@ export function ProjectOverview({
               href={`${basePath}/modeling`}
               className="flex items-center justify-between gap-3 rounded-xl border bg-card p-4 text-foreground hover:bg-muted/50 transition-colors"
             >
-              <span className="font-semibold">Modeling</span>
-              {loading ? <span className="text-muted-foreground text-sm">…</span> : <span className="text-muted-foreground text-sm tabular-nums">{reportsCount} report{reportsCount !== 1 ? 's' : ''}</span>}
-            </Link>
-          </li>
-          <li>
-            <Link
-              href={`${basePath}/chat`}
-              className="flex items-center justify-between gap-3 rounded-xl border bg-card p-4 text-foreground hover:bg-muted/50 transition-colors"
-            >
-              <span className="font-semibold">Chat</span>
-              <span className="text-muted-foreground text-sm">AI</span>
+              <span className="font-semibold">View Modeling Outputs</span>
+              <span className="text-muted-foreground text-sm">Reports</span>
             </Link>
           </li>
         </ul>
