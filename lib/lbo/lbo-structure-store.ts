@@ -27,14 +27,26 @@ export type LboModelEngineInputs = {
   periodYears: number;
 };
 
+export type LboDealInformation = {
+  dealName: string;
+  targetCompany: string;
+  sponsorName: string;
+  entryEbitda: number;
+  entryMultiple: number;
+  purchasePrice: number;
+  transactionFees: number;
+  exitYear: number;
+};
+
 export type LboStructureState = {
-  version: 1;
+  version: 2;
+  deal: LboDealInformation;
   totalFundingNeeds: number;
   instruments: FundingInstrument[];
   model: LboModelEngineInputs;
 };
 
-const STORAGE_PREFIX = 'lbo_structure_state_v1';
+const STORAGE_PREFIX = 'lbo_structure_state_v2';
 
 export function getLboStructureStorageKey(shortId: string, slug: string): string {
   return `${STORAGE_PREFIX}:${shortId}:${slug}`;
@@ -42,7 +54,17 @@ export function getLboStructureStorageKey(shortId: string, slug: string): string
 
 export function defaultLboStructureState(): LboStructureState {
   return {
-    version: 1,
+    version: 2,
+    deal: {
+      dealName: 'Platform Acquisition',
+      targetCompany: 'TargetCo',
+      sponsorName: 'Sponsor Capital',
+      entryEbitda: 12_500_000,
+      entryMultiple: 8,
+      purchasePrice: 100_000_000,
+      transactionFees: 3_000_000,
+      exitYear: 5,
+    },
     totalFundingNeeds: 100_000_000,
     instruments: [
       {
@@ -108,12 +130,14 @@ export function loadLboStructureState(shortId: string, slug: string): LboStructu
     const raw = window.localStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<LboStructureState>;
-    if (!parsed || parsed.version !== 1) return null;
+    if (!parsed) return null;
     // Basic shape guard; we still want defaults for any missing subfields.
     const defaults = defaultLboStructureState();
     return {
       ...defaults,
       ...parsed,
+      version: 2,
+      deal: { ...defaults.deal, ...(parsed.deal ?? {}) },
       model: { ...defaults.model, ...(parsed.model ?? {}) },
       instruments: Array.isArray(parsed.instruments) ? (parsed.instruments as FundingInstrument[]) : defaults.instruments,
     };

@@ -11,6 +11,7 @@ import {
   saveLboStructureState,
   type LboStructureState,
 } from '@/lib/lbo/lbo-structure-store';
+import { LboWizardNav } from '@/components/lbo/LboWizardNav';
 
 function formatMoney(value: number): string {
   return value.toLocaleString(undefined, { maximumFractionDigits: 0 });
@@ -47,12 +48,101 @@ export default function ProjectStructurePage() {
   return (
     <div className="space-y-6">
       <ProjectNav shortId={shortId} slug={slug} />
+      <LboWizardNav basePath={base} />
       <div>
         <h1 className="text-2xl font-bold">Inputs</h1>
         <p className="mt-2 text-muted-foreground">
-          Set total funding needs and the 5-year engine assumptions used to generate outputs.
+          Start the LBO wizard by entering key deal information and the top-level model assumptions.
         </p>
       </div>
+
+      <section className="rounded-xl border bg-card p-4">
+        <h2 className="font-semibold">Key Deal Information</h2>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Basic deal details used to frame the model before funding and outputs are reviewed.
+        </p>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          <label className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">Deal Name</p>
+            <input
+              type="text"
+              value={state.deal.dealName}
+              onChange={(e) => setState((s) => ({ ...s, deal: { ...s.deal, dealName: e.target.value } }))}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">Target Company</p>
+            <input
+              type="text"
+              value={state.deal.targetCompany}
+              onChange={(e) => setState((s) => ({ ...s, deal: { ...s.deal, targetCompany: e.target.value } }))}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">Sponsor</p>
+            <input
+              type="text"
+              value={state.deal.sponsorName}
+              onChange={(e) => setState((s) => ({ ...s, deal: { ...s.deal, sponsorName: e.target.value } }))}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
+          </label>
+        </div>
+
+        <div className="mt-3 grid gap-3 md:grid-cols-4">
+          <label className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">Entry EBITDA</p>
+            <input
+              type="number"
+              min={0}
+              value={state.deal.entryEbitda}
+              onChange={(e) => setState((s) => ({ ...s, deal: { ...s.deal, entryEbitda: Number(e.target.value) || 0 } }))}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">Entry Multiple</p>
+            <input
+              type="number"
+              min={0}
+              step="0.1"
+              value={state.deal.entryMultiple}
+              onChange={(e) => setState((s) => ({ ...s, deal: { ...s.deal, entryMultiple: Number(e.target.value) || 0 } }))}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">Purchase Price</p>
+            <input
+              type="number"
+              min={0}
+              value={state.deal.purchasePrice}
+              onChange={(e) => {
+                const value = Number(e.target.value) || 0;
+                setState((s) => ({
+                  ...s,
+                  deal: { ...s.deal, purchasePrice: value },
+                  totalFundingNeeds: value,
+                }));
+              }}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">Transaction Fees</p>
+            <input
+              type="number"
+              min={0}
+              value={state.deal.transactionFees}
+              onChange={(e) => setState((s) => ({ ...s, deal: { ...s.deal, transactionFees: Number(e.target.value) || 0 } }))}
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
+          </label>
+        </div>
+      </section>
 
       <section className="rounded-xl border bg-card p-4">
         <h2 className="font-semibold">Funding Target & Difference</h2>

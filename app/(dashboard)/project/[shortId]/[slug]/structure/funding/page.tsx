@@ -11,6 +11,7 @@ import {
   loadLboStructureState,
   saveLboStructureState,
 } from '@/lib/lbo/lbo-structure-store';
+import { LboWizardNav } from '@/components/lbo/LboWizardNav';
 
 function formatMoney(value: number): string {
   const n = Number.isFinite(value) ? value : 0;
@@ -55,10 +56,11 @@ export default function StructureFundingPage() {
   return (
     <div className="space-y-6">
       <ProjectNav shortId={shortId} slug={slug} />
+      <LboWizardNav basePath={base} />
       <div>
         <h1 className="text-2xl font-bold">Funding Structure</h1>
         <p className="mt-2 text-muted-foreground">
-          Allocate the total funding needs across debt tranches and equity. The difference is computed live.
+          Step 2 of the wizard: allocate the deal across debt and equity sources. The funding gap updates live.
         </p>
       </div>
 

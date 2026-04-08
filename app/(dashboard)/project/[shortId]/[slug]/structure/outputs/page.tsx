@@ -9,6 +9,7 @@ import { simulateLboModel } from '@/lib/lbo/lbo-core';
 import type { LboDealSchema, LboScheduleRow } from '@/lib/lbo/types';
 import type { FundingInstrument, LboStructureState } from '@/lib/lbo/lbo-structure-store';
 import { defaultLboStructureState, loadLboStructureState } from '@/lib/lbo/lbo-structure-store';
+import { LboWizardNav } from '@/components/lbo/LboWizardNav';
 
 function sumRecord(values: Record<string, number> | undefined): number {
   if (!values) return 0;
@@ -57,7 +58,12 @@ function buildDealFromState(state: LboStructureState): { deal: LboDealSchema; er
       amortization: { type: 'interest_only' as const },
     }));
 
-  const purchasePrice = Number.isFinite(state.totalFundingNeeds) ? state.totalFundingNeeds : 0;
+  const purchasePrice =
+    Number.isFinite(state.deal.purchasePrice) && state.deal.purchasePrice > 0
+      ? state.deal.purchasePrice
+      : Number.isFinite(state.totalFundingNeeds)
+        ? state.totalFundingNeeds
+        : 0;
   if (purchasePrice <= 0) errors.push('Total Funding Needs must be > 0.');
 
   const exitMultiple = Number.isFinite(state.model.exitMultiple) ? state.model.exitMultiple : 0;
@@ -69,7 +75,7 @@ function buildDealFromState(state: LboStructureState): { deal: LboDealSchema; er
     operatingCashFlows,
     transaction: {
       purchasePrice,
-      transactionFees: 0,
+      transactionFees: Number.isFinite(state.deal.transactionFees) ? state.deal.transactionFees : 0,
       exit: { type: 'multiple', exitMultiple },
     },
     debt: {
@@ -134,10 +140,33 @@ export default function StructureOutputsPage() {
   return (
     <div className="space-y-6">
       <ProjectNav shortId={shortId} slug={slug} />
+      <LboWizardNav basePath={base} />
       <div>
         <h1 className="text-2xl font-bold">Outputs</h1>
-        <p className="mt-2 text-muted-foreground">Equity returns (IRR/MOIC) and the debt paydown schedule.</p>
+        <p className="mt-2 text-muted-foreground">Step 4 of the wizard: review key outputs from the current LBO setup.</p>
       </div>
+
+      <section className="rounded-xl border bg-card p-4">
+        <h2 className="font-semibold">Deal Snapshot</h2>
+        <div className="mt-3 grid gap-3 md:grid-cols-4">
+          <div className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">Deal</p>
+            <p className="mt-1 text-sm font-semibold">{state.deal.dealName}</p>
+          </div>
+          <div className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">Target</p>
+            <p className="mt-1 text-sm font-semibold">{state.deal.targetCompany}</p>
+          </div>
+          <div className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">Sponsor</p>
+            <p className="mt-1 text-sm font-semibold">{state.deal.sponsorName}</p>
+          </div>
+          <div className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">Exit Year</p>
+            <p className="mt-1 text-sm font-semibold">Year {state.deal.exitYear}</p>
+          </div>
+        </div>
+      </section>
 
       {error && (
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-2 text-sm text-destructive">
